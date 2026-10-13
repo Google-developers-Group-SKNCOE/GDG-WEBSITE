@@ -9,6 +9,7 @@ import Home from './pages/Home'
 import Events from './pages/Events'
 import Core from './pages/Core'
 import Projects from './pages/Projects'
+import Resources from './pages/Resources'
 
 const pageVariants = {
   initial: { opacity: 0, x: 40 },
@@ -41,6 +42,7 @@ function AnimatedRoutes() {
           <Route path="/events" element={<Events />} />
           <Route path="/core" element={<Core />} />
           <Route path="/projects" element={<Projects />} />
+          <Route path="/resources" element={<Resources />} />
         </Routes>
       </motion.div>
     </AnimatePresence>
