@@ -1,0 +1,90 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+html, body {
+  overflow-x: hidden;
+}
+
+
+
+@layer base {
+  body {
+    @apply bg-surface text-on-surface;
+  }
+
+  /* Bold typography matching Brutalism */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-headline font-extrabold;
+  }
+}
+
+@layer utilities {
+  .grid-bg {
+    background-image:
+      linear-gradient(to right, #E5E5E5 1px, transparent 1px),
+      linear-gradient(to bottom, #E5E5E5 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .grid-paper {
+    background-size: 40px 40px;
+    background-image:
+      linear-gradient(to right, #E5E5E5 1px, transparent 1px),
+      linear-gradient(to bottom, #E5E5E5 1px, transparent 1px);
+  }
+
+  .brutal-btn {
+    @apply border-2 border-black font-bold uppercase tracking-wider transition-all shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-brutal-sm active:translate-x-1 active:translate-y-1 active:shadow-none;
+  }
+
+  .brutal-card {
+    @apply border-2 border-black transition-all shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-brutal-sm;
+  }
+
+  .brutal-nav {
+    @apply border-2 border-black bg-white shadow-brutal;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 700, 'GRAD' 0, 'opsz' 24;
+  }
+
+  .timeline-line::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 100%;
+    background-color: #000;
+    z-index: 0;
+  }
+
+  @keyframes marquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  .animate-marquee {
+    animation: marquee 20s linear infinite;
+  }
+}
