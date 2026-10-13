@@ -15,7 +15,7 @@ const Navbar = () => {
     '/': { text: 'text-primary', hover: 'hover:text-primary', bg: 'bg-primary' },
     '/events': { text: 'text-success', hover: 'hover:text-success', bg: 'bg-success' },
     '/core': { text: 'text-warning', hover: 'hover:text-warning', bg: 'bg-warning' },
-    '/resources': { text: 'text-danger', hover: 'hover:text-danger', bg: 'bg-danger' },
+    '/resources': { text: 'text-primary', hover: 'hover:text-primary', bg: 'bg-primary' },
   }
 
   const currentTheme = themeClasses[location.pathname] || themeClasses['/']
@@ -29,7 +29,7 @@ const Navbar = () => {
   ]
 
   return (
-    <header className="fixed top-4 md:top-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-1.5rem)] md:w-[calc(100%-2rem)] max-w-4xl">
+    <header className="absolute top-4 md:top-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-1.5rem)] md:w-[calc(100%-2rem)] max-w-4xl">
       <div className="brutal-nav rounded-full px-4 md:px-6 py-2 md:py-3 flex items-center justify-between relative z-50">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center overflow-hidden">

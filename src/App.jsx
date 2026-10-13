@@ -13,6 +13,7 @@ import Projects from './pages/Projects'
 import Resources from './pages/Resources'
 import Admin from './pages/Admin'
 
+
 const pageVariants = {
   initial: { opacity: 0, x: 40 },
   animate: { opacity: 1, x: 0 },
@@ -47,6 +48,7 @@ function AnimatedRoutes() {
           <Route path="/resources" element={<Resources />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/*" element={<Admin />} />
+
         </Routes>
       </motion.div>
     </AnimatePresence>

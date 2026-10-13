@@ -5,6 +5,21 @@ import { dbFetch } from '../lib/db'
 // ─── Event Resources Data ─────────────────────────────────────────────────────
 const eventResources = [
   {
+    id: 'connecting-backend-engineering',
+    title: 'Connecting To Backend Engineering',
+    type: 'Workshop',
+    date: 'Oct 13, 2026',
+    color: 'bg-danger',
+    icon: 'terminal',
+    description:
+      "Mastering Backend Engineering: An Interactive Workshop. Explore the essentials of backend engineering in 'Connecting to Backend Engineering.' Participants learn web request processes, HTTP, APIs, databases, and tools like Redis, RabbitMQ, and Kafka for scalable applications.",
+    tags: ['HTTP/HTTPS', 'APIs', 'DB', 'Redis', 'Kafka'],
+    resources: [
+      { label: 'Workshop Notes', icon: 'article', url: '#' },
+      { label: 'Resource Kit', icon: 'folder_zip', url: '#' },
+    ],
+  },
+  {
     id: 'synthera-2026',
     title: 'Synthera 2026',
     type: 'Flagship Event',
@@ -636,3 +651,4 @@ const Resources = () => {
 }
 
 export default Resources
+
