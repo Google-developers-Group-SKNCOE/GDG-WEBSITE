@@ -15,6 +15,7 @@ const Navbar = () => {
     '/': { text: 'text-primary', hover: 'hover:text-primary', bg: 'bg-primary' },
     '/events': { text: 'text-success', hover: 'hover:text-success', bg: 'bg-success' },
     '/core': { text: 'text-warning', hover: 'hover:text-warning', bg: 'bg-warning' },
+    '/resources': { text: 'text-danger', hover: 'hover:text-danger', bg: 'bg-danger' },
   }
 
   const currentTheme = themeClasses[location.pathname] || themeClasses['/']
@@ -23,6 +24,7 @@ const Navbar = () => {
     { label: 'Home', path: '/' },
     { label: 'Events', path: '/events' },
     { label: 'Core Team', path: '/core' },
+    { label: 'Resources', path: '/resources' },
     { label: 'Qubit', path: 'https://qubit-live.vercel.app/', isExternal: true }
   ]
 

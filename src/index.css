@@ -1,6 +1,26 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@import "tailwindcss";
+
+@theme {
+  /* Google Brand Colors */
+  --color-primary: #4285F4;
+  --color-danger: #EA4335;
+  --color-warning: #FBBC05;
+  --color-success: #34A853;
+  --color-surface: #FDFDFD;
+  --color-surface-dark: #E5E5E5;
+  --color-on-surface: #111111;
+  --color-on-surface-variant: #333333;
+  --color-outline: #000000;
+
+  /* Brutalism Box Shadows */
+  --shadow-brutal: 4px 4px 0px 0px rgba(0,0,0,1);
+  --shadow-brutal-sm: 2px 2px 0px 0px rgba(0,0,0,1);
+  --shadow-brutal-lg: 8px 8px 0px 0px rgba(0,0,0,1);
+
+  /* Font Families */
+  --font-headline: "Plus Jakarta Sans", sans-serif;
+  --font-body: "Inter", sans-serif;
+}
 
 html, body {
   overflow-x: hidden;

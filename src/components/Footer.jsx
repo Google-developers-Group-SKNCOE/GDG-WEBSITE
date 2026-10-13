@@ -23,8 +23,10 @@ const Footer = () => {
           <ul className="space-y-3 md:space-y-4 text-xs md:text-sm font-bold text-black uppercase">
             <li><Link to="/" className="hover:text-primary hover:underline transition-colors">Home</Link></li>
             <li><Link to="/events" className="hover:text-primary hover:underline transition-colors">Events</Link></li>
+            <li><Link to="/resources" className="hover:text-primary hover:underline transition-colors">Resources</Link></li>
             <li><Link to="/core" className="hover:text-primary hover:underline transition-colors">Our Community</Link></li>
             <li><a href="https://qubit-live.vercel.app/" target="_blank" rel="noopener noreferrer" className="hover:text-primary hover:underline transition-colors">Qubit</a></li>
+            <li><Link to="/admin" className="text-black/60 hover:text-danger hover:underline transition-colors inline-flex items-center gap-1">Admin Portal <span className="material-symbols-outlined text-xs">lock</span></Link></li>
           </ul>
         </div>
 
@@ -46,7 +48,10 @@ const Footer = () => {
 
       <div className="max-w-7xl mx-auto px-6 pt-8 md:pt-12 border-t-2 border-black flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6 relative z-10 bg-white text-center">
         <p className="text-black text-[10px] md:text-[12px] font-black uppercase">© 2026 Google Developer Groups On-Campus SKNCOE.</p>
-        <div className="flex gap-6 md:gap-8 text-[10px] md:text-[12px] font-black uppercase text-black">
+        <div className="flex flex-wrap justify-center gap-6 md:gap-8 text-[10px] md:text-[12px] font-black uppercase text-black">
+          <Link to="/admin" className="hover:underline hover:text-danger flex items-center gap-1">
+            <span className="material-symbols-outlined text-xs">admin_panel_settings</span> Admin Panel
+          </Link>
           <a href="#" className="hover:underline hover:text-primary">Privacy Policy</a>
           <a href="#" className="hover:underline hover:text-danger">Code of Conduct</a>
         </div>
