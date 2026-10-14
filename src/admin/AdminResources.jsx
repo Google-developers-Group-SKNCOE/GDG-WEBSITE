@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { dbFetch, dbInsert, dbUpdate, dbDelete } from '../lib/db'
+import { dbFetch, dbInsert, dbUpdate, dbDelete, parseEventDate, sortEventsByDate } from '../lib/db'
 import { AdminHeader, AdminBtn, AdminInput, AdminSelect, ImageUpload, StatusBadge, Spinner, EmptyState } from './AdminUI'
 
 const BLANK_RESOURCE = { event_id: '', label: '', icon: 'slideshow', url: '' }
@@ -9,9 +9,12 @@ const ICONS = [
   { id: 'slideshow', label: 'Slides' },
   { id: 'videocam', label: 'Video / Recording' },
   { id: 'menu_book', label: 'Guide / Docs' },
-  { id: 'folder_zip', label: 'Code / Zip' },
+  { id: 'folder_zip', label: 'Resource Kit / Zip' },
   { id: 'photo_library', label: 'Gallery / Photos' },
-  { id: 'article', label: 'Article / Recap' },
+  { id: 'article', label: 'Article / Recap / Notes' },
+  { id: 'code', label: 'Source Code / Project' },
+  { id: 'assignment', label: 'Problem Statements / Tasks' },
+  { id: 'emoji_events', label: 'Winning Projects / Trophy' },
   { id: 'link', label: 'Link / Website' }
 ]
 
@@ -24,7 +27,11 @@ const ResourceForm = ({ events, initial = BLANK_RESOURCE, onSave, onCancel, savi
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <AdminSelect label="Related Event *" value={form.event_id} onChange={set('event_id')} required>
           <option value="">-- Select Event --</option>
-          {events.map(ev => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
+          {events.map(ev => (
+            <option key={ev.id} value={ev.id}>
+              {ev.title} ({ev.date})
+            </option>
+          ))}
         </AdminSelect>
         <AdminInput label="Resource Label *" value={form.label} onChange={set('label')} required placeholder="e.g. Slides, Recording, Resource Kit" />
         <AdminSelect label="Icon Type" value={form.icon} onChange={set('icon')}>
@@ -35,7 +42,7 @@ const ResourceForm = ({ events, initial = BLANK_RESOURCE, onSave, onCancel, savi
 
       <ImageUpload
         label="Or Upload Picture / Resource Asset (Auto-sets URL)"
-        value={form.url.startsWith('http') || form.url.startsWith('data:') ? form.url : ''}
+        value={(form.url || '').startsWith('http') || (form.url || '').startsWith('data:') ? form.url : ''}
         onChange={(url) => setForm(f => ({ ...f, url }))}
       />
 
@@ -63,7 +70,7 @@ const AdminResources = () => {
       dbFetch('events', 'date', false),
       dbFetch('resources', 'created_at', false)
     ])
-    setEvents(evData || [])
+    setEvents(sortEventsByDate(evData || [], true))
     setResources(resData || [])
     setLoading(false)
   }, [])
@@ -87,11 +94,28 @@ const AdminResources = () => {
   }
 
   const getEventTitle = (eventId) => {
-    const ev = events.find(e => e.id === eventId)
+    const ev = events.find(e => e.id === eventId || e.title === eventId)
     return ev ? ev.title : eventId
   }
 
-  const filtered = filterEvent ? resources.filter(r => r.event_id === filterEvent) : resources
+  const getEventDate = (eventId) => {
+    const ev = events.find(e => e.id === eventId || e.title === eventId)
+    return ev ? ev.date : ''
+  }
+
+  const filtered = filterEvent
+    ? resources.filter(r => r.event_id === filterEvent || events.find(e => e.id === filterEvent)?.title === r.event_id)
+    : resources
+
+  // Sort resources by related event date descending (newest event first)
+  const sortedResources = [...filtered].sort((a, b) => {
+    const evA = events.find(e => e.id === a.event_id || e.title === a.event_id)
+    const evB = events.find(e => e.id === b.event_id || e.title === b.event_id)
+    const da = parseEventDate(evA?.date || a.created_at)
+    const db = parseEventDate(evB?.date || b.created_at)
+    if (da !== db) return db - da
+    return (a.label || '').localeCompare(b.label || '')
+  })
 
   return (
     <div>
@@ -115,7 +139,11 @@ const AdminResources = () => {
           className="border-2 border-black px-3 py-2 text-xs font-black bg-white uppercase cursor-pointer focus:outline-none shadow-brutal-sm"
         >
           <option value="">All Events ({resources.length})</option>
-          {events.map(ev => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
+          {events.map(ev => (
+            <option key={ev.id} value={ev.id}>
+              {ev.title} ({ev.date})
+            </option>
+          ))}
         </select>
       </div>
 
@@ -133,11 +161,11 @@ const AdminResources = () => {
         )}
       </AnimatePresence>
 
-      {loading ? <Spinner /> : filtered.length === 0 ? (
+      {loading ? <Spinner /> : sortedResources.length === 0 ? (
         <EmptyState icon="folder_off" text="No resources found. Add one above!" />
       ) : (
         <div className="flex flex-col gap-3">
-          {filtered.map(res => (
+          {sortedResources.map(res => (
             <motion.div
               key={res.id}
               layout
@@ -149,7 +177,12 @@ const AdminResources = () => {
                 <span className="material-symbols-outlined text-black text-2xl">{res.icon || 'link'}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-black uppercase text-danger mb-0.5 tracking-wider">{getEventTitle(res.event_id)}</p>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-[10px] font-black uppercase text-danger tracking-wider">{getEventTitle(res.event_id)}</span>
+                  {getEventDate(res.event_id) && (
+                    <span className="text-[10px] font-bold text-black/40">({getEventDate(res.event_id)})</span>
+                  )}
+                </div>
                 <p className="font-headline font-black uppercase text-black text-base">{res.label}</p>
                 <a href={res.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary font-bold truncate block hover:underline mt-0.5">
                   {res.url}

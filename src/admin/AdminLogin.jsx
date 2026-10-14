@@ -19,14 +19,6 @@ const AdminLogin = () => {
     setLoading(false)
   }
 
-  const handleQuickDemo = async () => {
-    setLoading(true)
-    setError('')
-    const { error } = await signIn('admin@gdgskncoe.com', 'admin123')
-    if (error) setError(error.message)
-    setLoading(false)
-  }
-
   return (
     <div className="min-h-screen grid-paper flex items-center justify-center p-6">
       <motion.div
@@ -73,7 +65,7 @@ const AdminLogin = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="admin@gdgskncoe.com"
+                placeholder="admin@example.com"
                 className="w-full border-2 border-black px-4 py-3 text-sm font-bold text-black bg-white focus:outline-none focus:border-primary transition-all placeholder:text-black/25"
               />
             </div>
@@ -103,16 +95,6 @@ const AdminLogin = () => {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
 
-            {!isSupabaseConfigured && (
-              <button
-                type="button"
-                onClick={handleQuickDemo}
-                disabled={loading}
-                className="w-full bg-yellow-400 text-black py-3 font-black uppercase tracking-wider text-xs border-2 border-black shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-brutal-sm active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
-              >
-                ⚡ 1-Click Quick Demo Sign In
-              </button>
-            )}
           </form>
         </div>
       </motion.div>

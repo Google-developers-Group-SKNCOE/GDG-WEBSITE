@@ -24,81 +24,10 @@ const SECTION_COLORS = {
   comments:  'bg-primary',
 }
 
-const SQL_SCHEMA = `-- 1. Events Table
-create table if not exists events (
-  id text primary key default gen_random_uuid(),
-  title text not null,
-  type text not null,
-  date text not null,
-  color text default 'bg-primary',
-  description text,
-  tags text[],
-  image text,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
--- 2. Resources Table
-create table if not exists resources (
-  id text primary key default gen_random_uuid(),
-  event_id text references events(id) on delete cascade,
-  label text not null,
-  icon text default 'slideshow',
-  url text not null,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
--- 3. Core Team Table
-create table if not exists team (
-  id text primary key default gen_random_uuid(),
-  name text not null,
-  roleTag text not null,
-  roleColor text default 'bg-primary',
-  category text default 'Lead',
-  image text,
-  linkedin text,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
--- 4. Sponsors Table
-create table if not exists sponsors (
-  id text primary key default gen_random_uuid(),
-  name text not null,
-  tier text default 'Community Partner',
-  logo text,
-  url text,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
--- Enable public read, admin write policies
-alter table events enable row level security;
-create policy "Public read events" on events for select using (true);
-create policy "Public insert/update/delete events" on events for all using (true);
-
-alter table resources enable row level security;
-create policy "Public read resources" on resources for select using (true);
-create policy "Public insert/update/delete resources" on resources for all using (true);
-
-alter table team enable row level security;
-create policy "Public read team" on team for select using (true);
-create policy "Public insert/update/delete team" on team for all using (true);
-
-alter table sponsors enable row level security;
-create policy "Public read sponsors" on sponsors for select using (true);
-create policy "Public insert/update/delete sponsors" on sponsors for all using (true);
-`
-
 const AdminLayout = () => {
   const { user, signOut, isSupabaseConfigured } = useAuth()
   const [active, setActive] = useState('events')
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [showSqlModal, setShowSqlModal] = useState(false)
-  const [copied, setCopied] = useState(false)
-
-  const copySql = () => {
-    navigator.clipboard.writeText(SQL_SCHEMA)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   const ActiveComponent = {
     events:    AdminEvents,
@@ -109,7 +38,7 @@ const AdminLayout = () => {
   }[active]
 
   return (
-    <div className="min-h-screen bg-surface-dark flex">
+    <div className="h-screen bg-surface-dark flex overflow-hidden">
 
       {/* ── Sidebar ── */}
       <>
@@ -143,18 +72,11 @@ const AdminLayout = () => {
           </div>
 
           {/* Database Status indicator */}
-          <div className="px-4 py-2 border-b-4 border-white/10 flex items-center justify-between text-[10px] font-black uppercase">
+          <div className="px-4 py-2 border-b-4 border-white/10 flex items-center text-[10px] font-black uppercase">
             <span className="flex items-center gap-1.5 text-white/70">
               <span className={`w-2 h-2 rounded-full ${isSupabaseConfigured ? 'bg-success' : 'bg-warning animate-pulse'}`} />
               {isSupabaseConfigured ? 'Supabase Live' : 'Local DB Mode'}
             </span>
-            <button
-              onClick={() => setShowSqlModal(true)}
-              className="text-primary hover:underline flex items-center gap-1"
-            >
-              <span className="material-symbols-outlined text-xs">schema</span>
-              SQL
-            </button>
           </div>
 
           {/* Nav */}
@@ -205,7 +127,7 @@ const AdminLayout = () => {
       </>
 
       {/* ── Main Content ── */}
-      <div className="flex-1 flex flex-col min-h-screen md:ml-0">
+      <div className="flex-1 flex flex-col h-full overflow-hidden md:ml-0">
         {/* Mobile topbar */}
         <div className="md:hidden flex items-center justify-between p-4 bg-black border-b-4 border-black">
           <button onClick={() => setSidebarOpen(true)} className="text-white">
@@ -218,7 +140,7 @@ const AdminLayout = () => {
         </div>
 
         {/* Content */}
-        <main className="flex-1 p-4 md:p-8 overflow-auto">
+        <main className="flex-1 p-4 pt-8 md:p-10 md:pt-10 overflow-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={active}
@@ -233,49 +155,6 @@ const AdminLayout = () => {
         </main>
       </div>
 
-      {/* SQL Setup Modal */}
-      {showSqlModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-white border-4 border-black shadow-brutal-lg max-w-2xl w-full max-h-[85vh] flex flex-col">
-            <div className="p-4 border-b-4 border-black flex items-center justify-between bg-primary text-white">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined">database</span>
-                <h3 className="font-headline font-black uppercase text-base">Supabase SQL Schema Setup</h3>
-              </div>
-              <button onClick={() => setShowSqlModal(false)} className="text-white hover:opacity-75">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <div className="p-4 overflow-y-auto flex-1 font-mono text-xs">
-              <p className="font-sans font-bold text-xs text-black/70 mb-3">
-                Paste this SQL in your <strong>Supabase Dashboard &gt; SQL Editor</strong> to instantly create tables for Events, Resources, Team, and Sponsors:
-              </p>
-              <pre className="p-3 bg-black text-green-400 border-2 border-black overflow-x-auto whitespace-pre">
-                {SQL_SCHEMA}
-              </pre>
-            </div>
-            <div className="p-4 border-t-4 border-black flex justify-between items-center bg-surface-dark">
-              <span className="text-xs font-bold text-black/60">
-                Create storage bucket <strong>gdg-media</strong> (public) for image uploads.
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={copySql}
-                  className="px-4 py-2 bg-primary text-white font-black text-xs uppercase border-2 border-black shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
-                >
-                  {copied ? 'Copied!' : 'Copy SQL'}
-                </button>
-                <button
-                  onClick={() => setShowSqlModal(false)}
-                  className="px-4 py-2 bg-black text-white font-black text-xs uppercase border-2 border-black"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

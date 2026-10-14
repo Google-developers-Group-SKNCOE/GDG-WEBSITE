@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { dbFetch } from '../lib/db'
 
 const domains = [
   { icon: 'html', title: 'Web Development', classColor: 'text-primary' },
@@ -26,6 +28,19 @@ const partners = [
 ]
 
 const Home = () => {
+  const [sponsors, setSponsors] = useState([])
+
+  useEffect(() => {
+    dbFetch('sponsors').then(({ data }) => {
+      if (data && data.length > 0) setSponsors(data)
+    })
+  }, [])
+
+  // Use DB sponsor logos if available, otherwise fall back to hardcoded partner images
+  const displayPartners = sponsors.length > 0
+    ? sponsors.map(s => ({ src: s.logo, name: s.name, url: s.url }))
+    : partners.map(src => ({ src, name: '', url: null }))
+
   return (
     <main className="relative pt-24 md:pt-32 space-y-24 md:space-y-40 grid-paper min-h-screen border-x-0 md:border-x-4 border-black max-w-screen-2xl mx-auto overflow-hidden">
 
@@ -113,7 +128,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Sponsors */}
       <section className="pt-8 pb-20 md:pb-24 -mt-8 md:-mt-16 border-y-4 border-black bg-white overflow-hidden">
         <div className="px-6 max-w-7xl mx-auto flex flex-col items-center">
           <div className="bg-black text-white px-4 py-2 border-2 border-black font-black uppercase tracking-widest mb-10 md:mb-12 shadow-brutal-sm -rotate-2 relative z-10 text-xs md:text-sm">
@@ -122,13 +136,23 @@ const Home = () => {
         </div>
         <div className="w-full py-3">
           <div className="flex animate-marquee items-center" style={{ width: 'max-content' }}>
-            {[...partners, ...partners].map((src, idx) => (
+            {[...displayPartners, ...displayPartners].map((partner, idx) => (
               <div key={idx} className="brutal-card bg-white p-2 w-32 h-32 md:w-40 md:h-40 flex items-center justify-center shrink-0 mx-4 md:mx-6">
-                <img
-                  className="w-full h-full object-contain filter grayscale contrast-200 hover:grayscale-0 transition-all duration-300 hover:scale-[1.04] cursor-pointer"
-                  alt={`Partner ${idx + 1}`}
-                  src={src}
-                />
+                {partner.url ? (
+                  <a href={partner.url} target="_blank" rel="noopener noreferrer" title={partner.name}>
+                    <img
+                      className="w-full h-full object-contain filter grayscale contrast-200 hover:grayscale-0 transition-all duration-300 hover:scale-[1.04] cursor-pointer"
+                      alt={partner.name || `Partner ${idx + 1}`}
+                      src={partner.src}
+                    />
+                  </a>
+                ) : (
+                  <img
+                    className="w-full h-full object-contain filter grayscale contrast-200 hover:grayscale-0 transition-all duration-300 hover:scale-[1.04] cursor-pointer"
+                    alt={partner.name || `Partner ${idx + 1}`}
+                    src={partner.src}
+                  />
+                )}
               </div>
             ))}
           </div>

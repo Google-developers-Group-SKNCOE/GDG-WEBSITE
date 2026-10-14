@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { dbFetch } from '../lib/db'
+import { dbFetch, sortEventsByDate } from '../lib/db'
 
 // ─── Event Resources Data ─────────────────────────────────────────────────────
 const eventResources = [
@@ -485,58 +485,57 @@ const CommunitySection = () => {
 
 // ─── Main Resources Page ──────────────────────────────────────────────────────
 const Resources = () => {
-  const [allEvents, setAllEvents] = useState(eventResources)
+  const [allEvents, setAllEvents] = useState(() => sortEventsByDate(eventResources, true))
   const [search, setSearch] = useState('')
   const [activeType, setActiveType] = useState('All')
 
   useEffect(() => {
     const fetchDb = async () => {
       const [{ data: dbEvents }, { data: dbRes }] = await Promise.all([
-        dbFetch('events'),
-        dbFetch('resources')
+        dbFetch('events', 'date', false),
+        dbFetch('resources', 'created_at', false)
       ])
 
-      let merged = [...eventResources]
-
+      let baseEvents = []
       if (dbEvents && dbEvents.length > 0) {
-        dbEvents.forEach(dbEv => {
-          const idx = merged.findIndex(e => e.id === dbEv.id || e.title === dbEv.title)
-          if (idx !== -1) {
-            merged[idx] = { ...merged[idx], ...dbEv }
-          } else {
-            merged.unshift({
-              id: dbEv.id,
-              title: dbEv.title,
-              type: dbEv.type || 'Workshop',
-              date: dbEv.date,
-              color: dbEv.color || 'bg-primary',
-              icon: 'event',
-              description: dbEv.description || '',
-              tags: dbEv.tags || [],
-              image: dbEv.image,
-              resources: []
-            })
+        baseEvents = [...dbEvents]
+        // If eventResources has any events not yet in dbEvents, append them as fallback
+        eventResources.forEach(hardcodedEv => {
+          if (!baseEvents.some(e => e.id === hardcodedEv.id || e.title === hardcodedEv.title)) {
+            baseEvents.push(hardcodedEv)
           }
         })
+      } else {
+        baseEvents = [...eventResources]
       }
 
-      if (dbRes && dbRes.length > 0) {
-        dbRes.forEach(r => {
-          const ev = merged.find(e => e.id === r.event_id || e.title === r.event_id)
-          if (ev) {
-            if (!ev.resources) ev.resources = []
-            if (!ev.resources.some(existing => existing.label === r.label && existing.url === r.url)) {
-              ev.resources.push({
-                label: r.label,
-                icon: r.icon || 'slideshow',
-                url: r.url
-              })
-            }
-          }
-        })
-      }
+      const resList = dbRes || []
+      const hasDbResources = resList.length > 0
 
-      setAllEvents([...merged])
+      const mapped = baseEvents.map(ev => {
+        // Collect resources from DB matching this event (by ID or title)
+        const dbMatched = resList
+          .filter(r => r.event_id === ev.id || r.event_id === ev.title)
+          .map(r => ({
+            label: r.label,
+            icon: r.icon || 'slideshow',
+            url: r.url
+          }))
+
+        // If the DB has resources, use DB resources (enabling add/edit/delete from admin).
+        // Otherwise fallback to hardcoded event.resources.
+        const finalResources = hasDbResources
+          ? dbMatched
+          : (ev.resources || [])
+
+        return {
+          ...ev,
+          icon: ev.icon || 'event',
+          resources: finalResources
+        }
+      })
+
+      setAllEvents(sortEventsByDate(mapped, true))
     }
     fetchDb()
   }, [])

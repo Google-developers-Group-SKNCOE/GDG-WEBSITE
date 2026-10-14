@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { dbFetch } from '../lib/db'
+import { dbFetch, sortEventsByDate } from '../lib/db'
 
 const defaultEventsData = {
   "2026": [
+    {
+      id: 'connecting-backend-engineering',
+      date: 'Oct 13, 2026',
+      type: 'Workshop',
+      title: 'Connecting To Backend Engineering',
+      color: 'bg-danger'
+    },
     {
       id: 'synthera-2026',
       date: 'February 23-25, 2026',
@@ -141,21 +148,24 @@ const Events = () => {
     const fetchDbEvents = async () => {
       const { data } = await dbFetch('events')
       if (data && data.length > 0) {
-        // Group by extracted year or default
-        const grouped = { ...defaultEventsData }
+        // DB has data — group by year and use as primary source
+        const grouped = {}
         data.forEach(item => {
-          const match = item.date?.match(/\b(202\d)\b/)
+          const match = item.date?.match(/\b(20\d{2})\b/)
           const year = match ? match[1] : '2026'
           if (!grouped[year]) grouped[year] = []
-
-          // Avoid duplicate by id or title
-          const exists = grouped[year].some(e => e.id === item.id || e.title === item.title)
-          if (!exists) {
-            grouped[year] = [item, ...grouped[year]]
-          }
+          grouped[year].push(item)
+        })
+        // Sort events within each year date-wise (newest event first)
+        Object.keys(grouped).forEach(year => {
+          grouped[year] = sortEventsByDate(grouped[year], true)
         })
         setEventsByYear(grouped)
+        // Auto-select the most recent year
+        const latestYear = Object.keys(grouped).sort((a, b) => b - a)[0]
+        if (latestYear) setSelectedYear(latestYear)
       }
+      // If DB is empty, keep defaultEventsData as fallback (already set in useState)
     }
     fetchDbEvents()
   }, [])

@@ -1,4 +1,6 @@
 import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { dbFetch } from '../lib/db'
 
 const PLACEHOLDER_M = "https://lh3.googleusercontent.com/aida-public/AB6AXuArJRxx1BwVSe5lNLTbBcahpFOUR7KwUsl9Ily6-Bse5yxINHIpAKFZVQ5yQBElB9GbOaPreCyG4a8jB7p6eoC_QdkK3PxHQS9BzcAR1ZWqM4qshcJvNGdcZlisr53Up3j9erx1SvpLTSPwkrUSFmBUIgWuSLJMIwmP2bug8t8ZYQAJ9g-pJRNjacGn1-bYzO4RjPWt-idgHTxncCLnig_JzZubtr5w_3I5DKbVZSlgTzAfDPwaYj765R69n5PSdPGx4-QG2lGYeA"
 
@@ -85,6 +87,18 @@ const LeaderCard = ({ person, index }) => (
 )
 
 const Core = () => {
+  const [dbTeam, setDbTeam] = useState([])
+
+  useEffect(() => {
+    dbFetch('team').then(({ data }) => {
+      if (data && data.length > 0) setDbTeam(data)
+    })
+  }, [])
+
+  // Separate DB team into leads (category=Lead/Co-Lead) and others
+  const dbLeaders = dbTeam.filter(m => m.category === 'Lead' || m.category === 'Co-Lead')
+  const dbOthers  = dbTeam.filter(m => m.category !== 'Lead' && m.category !== 'Co-Lead')
+
   return (
     <div className="grid-bg min-h-screen border-x-0 md:border-x-4 border-black max-w-screen-2xl mx-auto overflow-hidden">
       <main className="max-w-6xl mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-24 md:pb-40">
@@ -103,18 +117,50 @@ const Core = () => {
           </p>
         </section>
 
-        {/* Leadership Section */}
-        <section className="mb-10">
-          <div className="flex items-center gap-4 md:gap-6 mb-12 md:mb-16">
-            <h2 className="font-headline text-3xl md:text-5xl font-black text-black uppercase tracking-tighter bg-warning border-4 border-black px-4 md:px-6 py-2 shadow-brutal">Leadership</h2>
-            <div className="h-2 flex-1 bg-black hidden sm:block"></div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-            {leaders.map((leader, idx) => (
-              <LeaderCard key={leader.name} person={leader} index={idx} />
-            ))}
-          </div>
-        </section>
+        {/* ── DB-managed Leadership (from Admin) ── */}
+        {dbLeaders.length > 0 && (
+          <section className="mb-10">
+            <div className="flex items-center gap-4 md:gap-6 mb-12 md:mb-16">
+              <h2 className="font-headline text-3xl md:text-5xl font-black text-black uppercase tracking-tighter bg-primary text-white border-4 border-black px-4 md:px-6 py-2 shadow-brutal">Leadership</h2>
+              <div className="h-2 flex-1 bg-black hidden sm:block"></div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
+              {dbLeaders.map((member, idx) => (
+                <LeaderCard key={member.id || member.name} person={member} index={idx} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── DB-managed Other Members (from Admin) ── */}
+        {dbOthers.length > 0 && (
+          <section className="mb-10">
+            <div className="flex items-center gap-4 md:gap-6 mb-10">
+              <h2 className="font-headline text-2xl md:text-4xl font-black text-black uppercase tracking-tighter bg-success text-white border-4 border-black px-4 md:px-6 py-2 shadow-brutal">Core Members</h2>
+              <div className="h-2 flex-1 bg-black hidden sm:block"></div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
+              {dbOthers.map((member, idx) => (
+                <LeaderCard key={member.id || member.name} person={member} index={idx} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Hardcoded fallback Leadership (shown only when DB is empty) ── */}
+        {dbLeaders.length === 0 && (
+          <section className="mb-10">
+            <div className="flex items-center gap-4 md:gap-6 mb-12 md:mb-16">
+              <h2 className="font-headline text-3xl md:text-5xl font-black text-black uppercase tracking-tighter bg-warning border-4 border-black px-4 md:px-6 py-2 shadow-brutal">Leadership</h2>
+              <div className="h-2 flex-1 bg-black hidden sm:block"></div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
+              {leaders.map((leader, idx) => (
+                <LeaderCard key={leader.name} person={leader} index={idx} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Domain Sections */}
         <div className="space-y-8 md:space-y-10">

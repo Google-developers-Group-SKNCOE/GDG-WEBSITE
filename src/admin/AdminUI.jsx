@@ -1,7 +1,7 @@
-﻿// ── Shared Admin UI primitives ────────────────────────────────────────────────
+// ── Shared Admin UI primitives ────────────────────────────────────────────────
 
 export const AdminHeader = ({ icon, title, color = 'bg-primary', action }) => (
-  <div className="flex items-center justify-between mb-8">
+  <div className="flex items-center justify-between mb-10 pb-6 border-b-4 border-black/10">
     <div className="flex items-center gap-4">
       <div className={`w-12 h-12 ${color} border-2 border-black flex items-center justify-center shadow-brutal-sm`}>
         <span className="material-symbols-outlined text-white text-2xl">{icon}</span>
