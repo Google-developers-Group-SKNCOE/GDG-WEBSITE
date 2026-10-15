@@ -6,7 +6,8 @@ const AuthContext = createContext({})
 const LOCAL_ADMIN_KEY = 'gdg_local_admin_session'
 const RATE_LIMIT_KEY = 'gdg_login_attempts'
 const MAX_ATTEMPTS = 5
-const LOCKOUT_MS = 15 * 60 * 1000 // 15 minutes
+const LOCKOUT_MS = 15 * 60 * 1000   // 15 minutes lockout after too many attempts
+const SESSION_TTL_MS = 8 * 60 * 60 * 1000 // 8 hours session expiry
 
 const getRateLimit = () => {
   try {
@@ -52,11 +53,19 @@ export const AuthProvider = ({ children }) => {
       })
       return () => subscription?.unsubscribe?.()
     } else {
-      // Local session check
+      // Local session check — also enforce expiry
       try {
         const stored = localStorage.getItem(LOCAL_ADMIN_KEY)
         if (stored) {
-          setUser(JSON.parse(stored))
+          const parsed = JSON.parse(stored)
+          const age = Date.now() - (parsed.loginAt || 0)
+          if (age < SESSION_TTL_MS) {
+            setUser(parsed)
+          } else {
+            // Session expired — clean up silently
+            localStorage.removeItem(LOCAL_ADMIN_KEY)
+            console.info('Admin session expired. Please log in again.')
+          }
         }
       } catch (e) {
         console.error(e)
@@ -96,6 +105,7 @@ export const AuthProvider = ({ children }) => {
         email: email,
         user_metadata: { name: 'GDG Admin' },
         isLocal: true,
+        loginAt: Date.now(),  // timestamp for session expiry check
       }
       localStorage.setItem(LOCAL_ADMIN_KEY, JSON.stringify(adminUser))
       setUser(adminUser)

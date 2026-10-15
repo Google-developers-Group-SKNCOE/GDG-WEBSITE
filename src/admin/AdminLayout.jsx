@@ -71,12 +71,13 @@ const AdminLayout = () => {
             </Link>
           </div>
 
-          {/* Database Status indicator */}
-          <div className="px-4 py-2 border-b-4 border-white/10 flex items-center text-[10px] font-black uppercase">
+          {/* Status indicator */}
+          <div className="px-4 py-2 border-b-4 border-white/10 flex items-center justify-between text-[10px] font-black uppercase">
             <span className="flex items-center gap-1.5 text-white/70">
               <span className={`w-2 h-2 rounded-full ${isSupabaseConfigured ? 'bg-success' : 'bg-warning animate-pulse'}`} />
-              {isSupabaseConfigured ? 'Supabase Live' : 'Local DB Mode'}
+              {isSupabaseConfigured ? 'Supabase Live' : 'Local Dev Mode'}
             </span>
+            <span className="text-white/40">{isSupabaseConfigured ? 'Cloud DB' : 'Local DB'}</span>
           </div>
 
           {/* Nav */}

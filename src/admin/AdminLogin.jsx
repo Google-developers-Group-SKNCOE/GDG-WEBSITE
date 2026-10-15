@@ -50,10 +50,10 @@ const AdminLogin = () => {
           <div className="mb-6 p-3 bg-surface-dark border-2 border-black flex items-center justify-between text-xs font-black uppercase">
             <span className="flex items-center gap-2">
               <span className={`w-2.5 h-2.5 rounded-full ${isSupabaseConfigured ? 'bg-success' : 'bg-warning animate-pulse'}`} />
-              {isSupabaseConfigured ? 'Cloud Supabase Mode' : 'Local Database Mode'}
+              {isSupabaseConfigured ? 'Supabase Live' : 'Local Dev Mode'}
             </span>
-            <span className="text-[10px] text-black/40">
-              {isSupabaseConfigured ? 'Live' : 'Ready to use'}
+            <span className="text-[10px] text-black/50">
+              {isSupabaseConfigured ? 'DB + Direct Upload' : 'Ready to use'}
             </span>
           </div>
 

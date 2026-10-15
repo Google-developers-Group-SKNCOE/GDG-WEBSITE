@@ -1,7 +1,7 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 
-// ── Default initial seeds for local fallback & bootstrapping ──
-const SEEDS = {
+// ── Default initial seeds for local database & bootstrapping ──
+export const SEEDS = {
   events: [
     {
       id: 'connecting-backend-engineering',
@@ -303,20 +303,240 @@ const SEEDS = {
       name: 'Swarnim Shamgaonkar',
       roleTag: 'Organizer',
       roleColor: 'bg-primary',
-      category: 'Lead',
+      category: 'Organizer',
       image: '/core-images/organizer.jpeg',
       linkedin: 'https://www.linkedin.com/in/swarnim-shamgaonkar-b725472b1/',
-      created_at: new Date().toISOString()
+      created_at: new Date('2025-09-01T00:00:00Z').toISOString()
     },
     {
       id: 'tm-2',
       name: 'Pratham Jadhav',
       roleTag: 'Co-Organizer',
       roleColor: 'bg-success',
-      category: 'Co-Lead',
+      category: 'Organizer',
       image: '/core-images/co-organizer.jpg',
       linkedin: 'https://www.linkedin.com/in/jadhavprathammm/',
-      created_at: new Date().toISOString()
+      created_at: new Date('2025-09-01T01:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-3',
+      name: 'Sudeep Sakpal',
+      roleTag: 'Web Development Lead',
+      roleColor: 'bg-primary',
+      category: 'Lead',
+      image: '/core-images/leads/Web Dev Lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/sudeep-sakpal/',
+      created_at: new Date('2025-09-01T02:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-4',
+      name: 'Hritika Gupta',
+      roleTag: 'Web Development Co-Lead',
+      roleColor: 'bg-success',
+      category: 'Co-Lead',
+      image: '/core-images/coleads/Web dev Colead.jpg',
+      linkedin: 'https://www.linkedin.com/in/hritika3/',
+      created_at: new Date('2025-09-01T03:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-5',
+      name: 'Niranjan Sonawane',
+      roleTag: 'AI/ML Lead',
+      roleColor: 'bg-primary',
+      category: 'Lead',
+      image: '/core-images/leads/AIML Lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/niranjan-sonawane-59079728a/',
+      created_at: new Date('2025-09-01T04:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-6',
+      name: 'Manasvi Bhandarkar',
+      roleTag: 'AI/ML Co-Lead',
+      roleColor: 'bg-success',
+      category: 'Co-Lead',
+      image: '/core-images/coleads/Aiml Co-lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/manasvi-bhandarkar-3a32282a7/',
+      created_at: new Date('2025-09-01T05:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-7',
+      name: 'Srushti Dawkhar',
+      roleTag: 'Android Development Lead',
+      roleColor: 'bg-primary',
+      category: 'Lead',
+      image: '/core-images/leads/Android Lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/srushti-d-179146220/',
+      created_at: new Date('2025-09-01T06:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-8',
+      name: 'Aditya Khawale',
+      roleTag: 'Android Development Co-Lead',
+      roleColor: 'bg-success',
+      category: 'Co-Lead',
+      image: '/core-images/coleads/Android Co lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/aditya-khawale/',
+      created_at: new Date('2025-09-01T07:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-9',
+      name: 'Tvisha Ghiya',
+      roleTag: 'Competitive Programming Lead',
+      roleColor: 'bg-primary',
+      category: 'Lead',
+      image: '/core-images/leads/Competitive Lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/tvisha-ghiya-387062314/',
+      created_at: new Date('2025-09-01T08:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-10',
+      name: 'Kaiwalya Gunjal',
+      roleTag: 'Competitive Programming Co-Lead',
+      roleColor: 'bg-success',
+      category: 'Co-Lead',
+      image: '/core-images/coleads/Competitive Co-lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/kaiwlya-gunjal-561aa828a/',
+      created_at: new Date('2025-09-01T09:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-11',
+      name: 'Elton Fernandes',
+      roleTag: 'Cyber Security Lead',
+      roleColor: 'bg-primary',
+      category: 'Lead',
+      image: '/core-images/leads/Cyber Security Lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/elton-fernandes18/',
+      created_at: new Date('2025-09-01T10:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-12',
+      name: 'Priyal Sathe',
+      roleTag: 'Cyber Security Co-Lead',
+      roleColor: 'bg-success',
+      category: 'Co-Lead',
+      image: '/core-images/coleads/Cyber Security Co lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/priyal-sathe/',
+      created_at: new Date('2025-09-01T11:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-13',
+      name: 'Vinayak Kapkar',
+      roleTag: 'Event Management Lead',
+      roleColor: 'bg-primary',
+      category: 'Lead',
+      image: '/core-images/leads/Event Management Lead.jpeg',
+      linkedin: 'https://www.linkedin.com/in/vinayak-kapkar-109b16230/',
+      created_at: new Date('2025-09-01T12:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-14',
+      name: 'Shreya Kadam',
+      roleTag: 'Event Management Co-Lead',
+      roleColor: 'bg-success',
+      category: 'Co-Lead',
+      image: '/core-images/coleads/Event Management Co-lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/shreya-kadam-b30881355/',
+      created_at: new Date('2025-09-01T13:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-15',
+      name: 'Aditi Deshpande',
+      roleTag: 'Social Media Lead',
+      roleColor: 'bg-primary',
+      category: 'Lead',
+      image: '/core-images/leads/Social Media Lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/aditi-deshpande-9aba32274/',
+      created_at: new Date('2025-09-01T14:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-16',
+      name: 'Parth Karpe',
+      roleTag: 'Social Media Co-Lead',
+      roleColor: 'bg-success',
+      category: 'Co-Lead',
+      image: '/core-images/coleads/Social Media Colead.jpeg',
+      linkedin: null,
+      created_at: new Date('2025-09-01T15:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-17',
+      name: 'Avishkar Choundkar',
+      roleTag: 'Sponsorship Lead',
+      roleColor: 'bg-primary',
+      category: 'Lead',
+      image: '/core-images/leads/Sponsorship lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/avishkarchoundkar/',
+      created_at: new Date('2025-09-01T16:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-18',
+      name: 'Alphiya Kazi',
+      roleTag: 'Sponsorship Co-Lead',
+      roleColor: 'bg-success',
+      category: 'Co-Lead',
+      image: '/core-images/coleads/Sponsorship Colead.jpg',
+      linkedin: 'https://www.linkedin.com/in/alphiya-kazi-1609b12a1/',
+      created_at: new Date('2025-09-01T17:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-19',
+      name: 'Aarya Anekar',
+      roleTag: 'Cloud Computing Lead',
+      roleColor: 'bg-primary',
+      category: 'Lead',
+      image: '/core-images/leads/Cloud Lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/aaryaa2005/',
+      created_at: new Date('2025-09-01T18:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-20',
+      name: 'Harsh Dharmawat',
+      roleTag: 'Cloud Computing Co-Lead',
+      roleColor: 'bg-success',
+      category: 'Co-Lead',
+      image: '/core-images/coleads/Cloud Computing Co lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/harsh-dharmawat/',
+      created_at: new Date('2025-09-01T19:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-21',
+      name: 'Dhanashree Labhe',
+      roleTag: 'Women Tech Lead',
+      roleColor: 'bg-primary',
+      category: 'Lead',
+      image: '/core-images/leads/Women Tech Lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/dhanashree-labhe-232344281/',
+      created_at: new Date('2025-09-01T20:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-22',
+      name: 'Dynanada Thuse',
+      roleTag: 'Women Tech Co-Lead',
+      roleColor: 'bg-success',
+      category: 'Co-Lead',
+      image: '/core-images/coleads/Women Tech Colead.jpg',
+      linkedin: 'https://www.linkedin.com/in/dnyanada-thuse-992654317/',
+      created_at: new Date('2025-09-01T21:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-23',
+      name: 'Madhura Gore',
+      roleTag: 'UI/UX Lead',
+      roleColor: 'bg-primary',
+      category: 'Lead',
+      image: '/core-images/leads/UIUX Lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/madhuragore/',
+      created_at: new Date('2025-09-01T22:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-24',
+      name: 'Divya Bhandari',
+      roleTag: 'UI/UX Co-Lead',
+      roleColor: 'bg-success',
+      category: 'Co-Lead',
+      image: '/core-images/coleads/UIUX Colead.jpg',
+      linkedin: 'https://www.linkedin.com/in/divya-bhandari-14b4a1308/',
+      created_at: new Date('2025-09-01T23:00:00Z').toISOString()
     }
   ],
   comments: []
@@ -425,24 +645,34 @@ const setLocalData = (table, data) => {
   }
 }
 
-// ── Upload image to Supabase Storage bucket or fallback to Base64 ──
-export const uploadImage = async (file, bucket = 'gdg-media') => {
-  if (isSupabaseConfigured) {
-    try {
-      const ext = file.name.split('.').pop()
-      const path = `uploads/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true })
-      if (!error) {
-        const { data } = supabase.storage.from(bucket).getPublicUrl(path)
-        if (data?.publicUrl) return data.publicUrl
-      }
-      console.warn('Supabase storage upload error, falling back to Data URL')
-    } catch (e) {
-      console.warn('Supabase storage exception, falling back to Data URL:', e)
-    }
+// ── Google Drive & Direct Image Link Helper (0 MB Supabase Storage) ──
+export const convertGoogleDriveUrl = (url) => {
+  if (!url || typeof url !== 'string') return url
+  const trimmed = url.trim()
+
+  // Case 1: https://drive.google.com/file/d/FILE_ID/view...
+  const matchFileD = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/)
+  if (matchFileD && matchFileD[1]) {
+    return `https://lh3.googleusercontent.com/d/${matchFileD[1]}`
   }
 
-  // Fallback to Base64 Data URL so image upload works instantly without extra config
+  // Case 2: https://drive.google.com/open?id=FILE_ID or ?id=FILE_ID
+  const matchIdParam = trimmed.match(/drive\.google\.com\/.*[?&]id=([a-zA-Z0-9_-]+)/)
+  if (matchIdParam && matchIdParam[1]) {
+    return `https://lh3.googleusercontent.com/d/${matchIdParam[1]}`
+  }
+
+  // Case 3: https://drive.google.com/uc?id=FILE_ID
+  const matchUc = trimmed.match(/drive\.google\.com\/uc\?.*id=([a-zA-Z0-9_-]+)/)
+  if (matchUc && matchUc[1]) {
+    return `https://lh3.googleusercontent.com/d/${matchUc[1]}`
+  }
+
+  return trimmed
+}
+
+// Local Base64 fallback (0 MB Supabase Storage used)
+export const uploadImage = async (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(reader.result)
@@ -451,25 +681,26 @@ export const uploadImage = async (file, bucket = 'gdg-media') => {
   })
 }
 
-// ── Generic CRUD helpers with dual Supabase + Local Storage support ──
+// ── Generic CRUD Helpers: Supabase Live Database + Local Cache Fallback ──
 
 export const dbFetch = async (table, order = 'created_at', ascending = false) => {
   if (isSupabaseConfigured) {
     try {
       const res = await supabase.from(table).select('*').order(order, { ascending })
-      if (!res.error && res.data) {
+      if (!res.error && res.data && res.data.length > 0) {
         if (table === 'events') {
           return { data: sortEventsByDate(res.data, !ascending), error: null }
         }
         return res
       }
-      console.warn(`Supabase query for ${table} had an error, using local data:`, res.error?.message)
+      if (res.error) {
+        console.warn(`Supabase query for ${table} had an error, using local fallback:`, res.error?.message)
+      }
     } catch (e) {
       console.warn(`Supabase fetch failed for ${table}:`, e)
     }
   }
 
-  // Fallback
   const list = getLocalData(table)
   let sorted
   if (table === 'events') {
@@ -494,8 +725,10 @@ export const dbInsert = async (table, row) => {
 
   if (isSupabaseConfigured) {
     try {
-      const res = await supabase.from(table).insert(row).select().single()
+      const res = await supabase.from(table).insert(newRow).select().single()
       if (!res.error && res.data) {
+        const list = getLocalData(table)
+        setLocalData(table, [res.data, ...list])
         return res
       }
       console.warn(`Supabase insert failed for ${table}:`, res.error?.message)
@@ -515,6 +748,9 @@ export const dbUpdate = async (table, id, row) => {
     try {
       const res = await supabase.from(table).update(row).eq('id', id).select().single()
       if (!res.error && res.data) {
+        const list = getLocalData(table)
+        const updated = list.map((item) => (item.id === id ? { ...item, ...res.data } : item))
+        setLocalData(table, updated)
         return res
       }
     } catch (e) {
@@ -534,6 +770,10 @@ export const dbDelete = async (table, id) => {
     try {
       const res = await supabase.from(table).delete().eq('id', id)
       if (!res.error) {
+        recordDeletedId(table, id)
+        const list = getLocalData(table)
+        const updated = list.filter((item) => item.id !== id)
+        setLocalData(table, updated)
         return res
       }
     } catch (e) {

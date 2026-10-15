@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { dbFetch, sortEventsByDate } from '../lib/db'
+import { dbFetch, sortEventsByDate, convertGoogleDriveUrl } from '../lib/db'
 
 const defaultEventsData = {
   "2026": [
@@ -106,7 +106,17 @@ const TimelineItem = ({ event, index }) => {
       <div className="w-[calc(100%-3rem)] md:w-[45%] ml-12 md:ml-0 bg-white border-4 border-black p-6 md:p-8 shadow-brutal hover:shadow-brutal-lg transition-all hover:-translate-y-1">
         {event.image && (
           <div className="mb-4 border-2 border-black overflow-hidden max-h-56 bg-surface-dark shadow-brutal-sm">
-            <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
+            <img
+              src={convertGoogleDriveUrl(event.image)}
+              alt={event.title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const match = event.image?.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/)
+                if (match && match[1]) {
+                  e.target.src = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`
+                }
+              }}
+            />
           </div>
         )}
         <div className="flex flex-wrap items-center gap-3 mb-4">

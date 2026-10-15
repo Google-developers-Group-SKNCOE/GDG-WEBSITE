@@ -143,12 +143,66 @@ values
   ('res-10b', 'gen-ai-2024', 'Recording', 'videocam', 'https://youtube.com')
 on conflict (id) do nothing;
 
+insert into public.team (id, name, "roleTag", "roleColor", category, image, linkedin, created_at)
+values
+  ('tm-1', 'Swarnim Shamgaonkar', 'Organizer', 'bg-primary', 'Organizer', '/core-images/organizer.jpeg', 'https://www.linkedin.com/in/swarnim-shamgaonkar-b725472b1/', '2025-09-01T00:00:00Z'),
+  ('tm-2', 'Pratham Jadhav', 'Co-Organizer', 'bg-success', 'Organizer', '/core-images/co-organizer.jpg', 'https://www.linkedin.com/in/jadhavprathammm/', '2025-09-01T01:00:00Z'),
+  ('tm-3', 'Sudeep Sakpal', 'Web Development Lead', 'bg-primary', 'Lead', '/core-images/leads/Web Dev Lead.jpg', 'https://www.linkedin.com/in/sudeep-sakpal/', '2025-09-01T02:00:00Z'),
+  ('tm-4', 'Hritika Gupta', 'Web Development Co-Lead', 'bg-success', 'Co-Lead', '/core-images/coleads/Web dev Colead.jpg', 'https://www.linkedin.com/in/hritika3/', '2025-09-01T03:00:00Z'),
+  ('tm-5', 'Niranjan Sonawane', 'AI/ML Lead', 'bg-primary', 'Lead', '/core-images/leads/AIML Lead.jpg', 'https://www.linkedin.com/in/niranjan-sonawane-59079728a/', '2025-09-01T04:00:00Z'),
+  ('tm-6', 'Manasvi Bhandarkar', 'AI/ML Co-Lead', 'bg-success', 'Co-Lead', '/core-images/coleads/Aiml Co-lead.jpg', 'https://www.linkedin.com/in/manasvi-bhandarkar-3a32282a7/', '2025-09-01T05:00:00Z'),
+  ('tm-7', 'Srushti Dawkhar', 'Android Development Lead', 'bg-primary', 'Lead', '/core-images/leads/Android Lead.jpg', 'https://www.linkedin.com/in/srushti-d-179146220/', '2025-09-01T06:00:00Z'),
+  ('tm-8', 'Aditya Khawale', 'Android Development Co-Lead', 'bg-success', 'Co-Lead', '/core-images/coleads/Android Co lead.jpg', 'https://www.linkedin.com/in/aditya-khawale/', '2025-09-01T07:00:00Z'),
+  ('tm-9', 'Tvisha Ghiya', 'Competitive Programming Lead', 'bg-primary', 'Lead', '/core-images/leads/Competitive Lead.jpg', 'https://www.linkedin.com/in/tvisha-ghiya-387062314/', '2025-09-01T08:00:00Z'),
+  ('tm-10', 'Kaiwalya Gunjal', 'Competitive Programming Co-Lead', 'bg-success', 'Co-Lead', '/core-images/coleads/Competitive Co-lead.jpg', 'https://www.linkedin.com/in/kaiwlya-gunjal-561aa828a/', '2025-09-01T09:00:00Z'),
+  ('tm-11', 'Elton Fernandes', 'Cyber Security Lead', 'bg-primary', 'Lead', '/core-images/leads/Cyber Security Lead.jpg', 'https://www.linkedin.com/in/elton-fernandes18/', '2025-09-01T10:00:00Z'),
+  ('tm-12', 'Priyal Sathe', 'Cyber Security Co-Lead', 'bg-success', 'Co-Lead', '/core-images/coleads/Cyber Security Co lead.jpg', 'https://www.linkedin.com/in/priyal-sathe/', '2025-09-01T11:00:00Z'),
+  ('tm-13', 'Vinayak Kapkar', 'Event Management Lead', 'bg-primary', 'Lead', '/core-images/leads/Event Management Lead.jpeg', 'https://www.linkedin.com/in/vinayak-kapkar-109b16230/', '2025-09-01T12:00:00Z'),
+  ('tm-14', 'Shreya Kadam', 'Event Management Co-Lead', 'bg-success', 'Co-Lead', '/core-images/coleads/Event Management Co-lead.jpg', 'https://www.linkedin.com/in/shreya-kadam-b30881355/', '2025-09-01T13:00:00Z'),
+  ('tm-15', 'Aditi Deshpande', 'Social Media Lead', 'bg-primary', 'Lead', '/core-images/leads/Social Media Lead.jpg', 'https://www.linkedin.com/in/aditi-deshpande-9aba32274/', '2025-09-01T14:00:00Z'),
+  ('tm-16', 'Parth Karpe', 'Social Media Co-Lead', 'bg-success', 'Co-Lead', '/core-images/coleads/Social Media Colead.jpeg', null, '2025-09-01T15:00:00Z'),
+  ('tm-17', 'Avishkar Choundkar', 'Sponsorship Lead', 'bg-primary', 'Lead', '/core-images/leads/Sponsorship lead.jpg', 'https://www.linkedin.com/in/avishkarchoundkar/', '2025-09-01T16:00:00Z'),
+  ('tm-18', 'Alphiya Kazi', 'Sponsorship Co-Lead', 'bg-success', 'Co-Lead', '/core-images/coleads/Sponsorship Colead.jpg', 'https://www.linkedin.com/in/alphiya-kazi-1609b12a1/', '2025-09-01T17:00:00Z'),
+  ('tm-19', 'Aarya Anekar', 'Cloud Computing Lead', 'bg-primary', 'Lead', '/core-images/leads/Cloud Lead.jpg', 'https://www.linkedin.com/in/aaryaa2005/', '2025-09-01T18:00:00Z'),
+  ('tm-20', 'Harsh Dharmawat', 'Cloud Computing Co-Lead', 'bg-success', 'Co-Lead', '/core-images/coleads/Cloud Computing Co lead.jpg', 'https://www.linkedin.com/in/harsh-dharmawat/', '2025-09-01T19:00:00Z'),
+  ('tm-21', 'Dhanashree Labhe', 'Women Tech Lead', 'bg-primary', 'Lead', '/core-images/leads/Women Tech Lead.jpg', 'https://www.linkedin.com/in/dhanashree-labhe-232344281/', '2025-09-01T20:00:00Z'),
+  ('tm-22', 'Dynanada Thuse', 'Women Tech Co-Lead', 'bg-success', 'Co-Lead', '/core-images/coleads/Women Tech Colead.jpg', 'https://www.linkedin.com/in/dnyanada-thuse-992654317/', '2025-09-01T21:00:00Z'),
+  ('tm-23', 'Madhura Gore', 'UI/UX Lead', 'bg-primary', 'Lead', '/core-images/leads/UIUX Lead.jpg', 'https://www.linkedin.com/in/madhuragore/', '2025-09-01T22:00:00Z'),
+  ('tm-24', 'Divya Bhandari', 'UI/UX Co-Lead', 'bg-success', 'Co-Lead', '/core-images/coleads/UIUX Colead.jpg', 'https://www.linkedin.com/in/divya-bhandari-14b4a1308/', '2025-09-01T23:00:00Z')
+on conflict (id) do nothing;
+
 -- ==============================================================================
--- STORAGE BUCKET SETUP:
--- 1. Go to Supabase Dashboard -> Storage
--- 2. Click "New Bucket", name it: gdg-media
--- 3. Toggle "Public bucket" to ON
--- 4. Click Save
--- NOTE: Add a storage policy to restrict uploads to authenticated users only:
---   Policy: authenticated users can upload (INSERT) to gdg-media
+-- 8. Storage Bucket Policies for gdg-media
+-- Run AFTER creating the bucket manually in Supabase Dashboard -> Storage
+-- ==============================================================================
+
+-- Allow anyone to read/view uploaded files (profile pics, event images)
+create policy "Public read gdg-media"
+  on storage.objects for select
+  using ( bucket_id = 'gdg-media' );
+
+-- Only authenticated admins can upload files
+create policy "Auth upload gdg-media"
+  on storage.objects for insert
+  with check ( bucket_id = 'gdg-media' AND auth.role() = 'authenticated' );
+
+-- Only authenticated admins can delete files
+create policy "Auth delete gdg-media"
+  on storage.objects for delete
+  using ( bucket_id = 'gdg-media' AND auth.role() = 'authenticated' );
+
+-- ==============================================================================
+-- HOW TO APPLY THESE POLICIES:
+-- 1. Go to https://app.supabase.com -> Your Project -> SQL Editor
+-- 2. Click "New Query"
+-- 3. Paste this ENTIRE file and click "Run"
+-- 4. Go to Storage -> Create bucket named: gdg-media -> toggle Public ON
+--
+-- SECURITY SUMMARY:
+-- ✅ Public visitors  -> can only READ events, resources, team, sponsors
+-- ✅ Authenticated    -> can INSERT / UPDATE / DELETE all tables
+-- ✅ Comments         -> public can submit, only admin can read/approve/delete
+-- ✅ Storage          -> public can view files, only admin can upload/delete
+-- ✅ .env             -> uses ANON key only (safe for frontend)
+-- ✅ Local fallback   -> session expires after 8 hours automatically
 -- ==============================================================================

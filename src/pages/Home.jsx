@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
-import { dbFetch } from '../lib/db'
+import { dbFetch, convertGoogleDriveUrl } from '../lib/db'
 
 const domains = [
   { icon: 'html', title: 'Web Development', classColor: 'text-primary' },
@@ -38,7 +38,7 @@ const Home = () => {
 
   // Use DB sponsor logos if available, otherwise fall back to hardcoded partner images
   const displayPartners = sponsors.length > 0
-    ? sponsors.map(s => ({ src: s.logo, name: s.name, url: s.url }))
+    ? sponsors.map(s => ({ src: convertGoogleDriveUrl(s.logo), name: s.name, url: s.url }))
     : partners.map(src => ({ src, name: '', url: null }))
 
   return (
