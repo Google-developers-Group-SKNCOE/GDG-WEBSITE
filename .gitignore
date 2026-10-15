@@ -2,4 +2,7 @@ node_modules/
 dist/
 .DS_Store
 scratch/
-.env
+
+# Local-only secrets (never committed to GitHub)
+.env.local
+.env.*.local

@@ -82,8 +82,17 @@ const AdminLogin = () => {
             </div>
 
             {error && (
-              <div className="bg-danger text-white border-2 border-black px-4 py-3 text-xs font-black uppercase shadow-brutal-sm">
-                {error}
+              <div className="bg-danger text-white border-2 border-black px-4 py-3 text-xs font-black uppercase shadow-brutal-sm flex items-center justify-between">
+                <span>{error}</span>
+                {error.includes('Too many') && (
+                  <button
+                    type="button"
+                    onClick={() => { localStorage.removeItem('gdg_login_attempts'); setError('') }}
+                    className="underline text-[10px] ml-2 font-black cursor-pointer hover:text-black shrink-0"
+                  >
+                    Reset Lock
+                  </button>
+                )}
               </div>
             )}
 

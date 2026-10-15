@@ -83,19 +83,22 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
+    // 1. If Supabase is configured with real keys, try Supabase Auth first
     if (isSupabaseConfigured) {
       const res = await supabase.auth.signInWithPassword({ email, password })
-      if (res.error) bumpRateLimit()
-      return res
+      if (!res.error && res.data?.user) {
+        localStorage.removeItem(RATE_LIMIT_KEY)
+        return res
+      }
     }
 
-    // Local fallback: only allow if VITE_LOCAL_ADMIN_EMAIL and VITE_LOCAL_ADMIN_PASSWORD are set in .env
+    // 2. Local fallback check (from .env.local)
     const allowedEmail = import.meta.env.VITE_LOCAL_ADMIN_EMAIL
     const allowedPassword = import.meta.env.VITE_LOCAL_ADMIN_PASSWORD
 
     if (
       allowedEmail && allowedPassword &&
-      email === allowedEmail &&
+      email.trim().toLowerCase() === allowedEmail.trim().toLowerCase() &&
       password === allowedPassword
     ) {
       // Reset rate limit on success
