@@ -334,7 +334,7 @@ export const SEEDS = {
       roleTag: 'Web Development Co-Lead',
       roleColor: 'bg-success',
       category: 'Co-Lead',
-      image: '/core-images/coleads/Web dev Colead.jpg',
+      image: 'https://raw.githubusercontent.com/Google-developers-Group-SKNCOE/gdg-skncoe-assets/main/team/coleads/Web%20dev%20co%20lead.jpeg',
       linkedin: 'https://www.linkedin.com/in/hritika3/',
       created_at: new Date('2025-09-01T03:00:00Z').toISOString()
     },
@@ -354,7 +354,7 @@ export const SEEDS = {
       roleTag: 'AI/ML Co-Lead',
       roleColor: 'bg-success',
       category: 'Co-Lead',
-      image: '/core-images/coleads/Aiml Co-lead.jpg',
+      image: 'https://raw.githubusercontent.com/Google-developers-Group-SKNCOE/gdg-skncoe-assets/main/team/coleads/AIML%20Colead.jpeg',
       linkedin: 'https://www.linkedin.com/in/manasvi-bhandarkar-3a32282a7/',
       created_at: new Date('2025-09-01T05:00:00Z').toISOString()
     },
