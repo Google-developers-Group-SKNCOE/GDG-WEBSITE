@@ -19,7 +19,14 @@ const ICONS = [
 ]
 
 const ResourceForm = ({ events, initial = BLANK_RESOURCE, onSave, onCancel, saving }) => {
-  const [form, setForm] = useState(initial)
+  const [form, setForm] = useState(() => ({
+    ...BLANK_RESOURCE,
+    ...initial,
+    event_id: initial.event_id || initial.related_event || '',
+    label: initial.label || initial.resource_label || initial.title || '',
+    icon: initial.icon || initial.icon_type || 'slideshow',
+    url: initial.url || initial.resource_url || initial.link || ''
+  }))
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
 
   return (
@@ -94,27 +101,32 @@ const AdminResources = () => {
   }
 
   const getEventTitle = (eventId) => {
-    const ev = events.find(e => e.id === eventId || e.title === eventId)
+    const ev = events.find(e => String(e.id) === String(eventId) || e.title === eventId)
     return ev ? ev.title : eventId
   }
 
   const getEventDate = (eventId) => {
-    const ev = events.find(e => e.id === eventId || e.title === eventId)
+    const ev = events.find(e => String(e.id) === String(eventId) || e.title === eventId)
     return ev ? ev.date : ''
   }
 
   const filtered = filterEvent
-    ? resources.filter(r => r.event_id === filterEvent || events.find(e => e.id === filterEvent)?.title === r.event_id)
+    ? resources.filter(r => {
+        const evId = r.event_id || r.related_event
+        return String(evId) === String(filterEvent) || events.find(e => String(e.id) === String(filterEvent))?.title === evId
+      })
     : resources
 
   // Sort resources by related event date descending (newest event first)
   const sortedResources = [...filtered].sort((a, b) => {
-    const evA = events.find(e => e.id === a.event_id || e.title === a.event_id)
-    const evB = events.find(e => e.id === b.event_id || e.title === b.event_id)
+    const evIdA = a.event_id || a.related_event
+    const evIdB = b.event_id || b.related_event
+    const evA = events.find(e => String(e.id) === String(evIdA) || e.title === evIdA)
+    const evB = events.find(e => String(e.id) === String(evIdB) || e.title === evIdB)
     const da = parseEventDate(evA?.date || a.created_at)
     const db = parseEventDate(evB?.date || b.created_at)
     if (da !== db) return db - da
-    return (a.label || '').localeCompare(b.label || '')
+    return (a.label || a.resource_label || a.title || '').localeCompare(b.label || b.resource_label || b.title || '')
   })
 
   return (
@@ -174,18 +186,18 @@ const AdminResources = () => {
               className="bg-white border-4 border-black shadow-brutal flex flex-col md:flex-row md:items-center gap-4 p-5"
             >
               <div className="w-12 h-12 bg-surface-dark border-2 border-black flex items-center justify-center shrink-0 shadow-brutal-sm">
-                <span className="material-symbols-outlined text-black text-2xl">{res.icon || 'link'}</span>
+                <span className="material-symbols-outlined text-black text-2xl">{res.icon || res.icon_type || 'link'}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-[10px] font-black uppercase text-danger tracking-wider">{getEventTitle(res.event_id)}</span>
-                  {getEventDate(res.event_id) && (
-                    <span className="text-[10px] font-bold text-black/40">({getEventDate(res.event_id)})</span>
+                  <span className="text-[10px] font-black uppercase text-danger tracking-wider">{getEventTitle(res.event_id || res.related_event)}</span>
+                  {getEventDate(res.event_id || res.related_event) && (
+                    <span className="text-[10px] font-bold text-black/40">({getEventDate(res.event_id || res.related_event)})</span>
                   )}
                 </div>
-                <p className="font-headline font-black uppercase text-black text-base">{res.label}</p>
-                <a href={res.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary font-bold truncate block hover:underline mt-0.5">
-                  {res.url}
+                <p className="font-headline font-black uppercase text-black text-base">{res.label || res.resource_label || res.title}</p>
+                <a href={res.url || res.resource_url || res.link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary font-bold truncate block hover:underline mt-0.5">
+                  {res.url || res.resource_url || res.link}
                 </a>
               </div>
               <div className="flex gap-2 shrink-0">

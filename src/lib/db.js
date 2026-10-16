@@ -765,7 +765,21 @@ export const dbFetch = async (table, order = 'created_at', ascending = false) =>
     try {
       const res = await supabase.from(table).select('*').order(order, { ascending })
       if (!res.error && res.data) {
-        const activeRows = res.data.filter(item => !item.is_deleted)
+        let activeRows = res.data.filter(item => !item.is_deleted)
+        if (table === 'resources') {
+          activeRows = activeRows.map(r => ({
+            ...r,
+            event_id: r.event_id || r.related_event,
+            related_event: r.related_event || r.event_id,
+            label: r.label || r.resource_label || r.title,
+            resource_label: r.resource_label || r.label || r.title,
+            icon: r.icon || r.icon_type || 'slideshow',
+            icon_type: r.icon_type || r.icon || 'slideshow',
+            url: r.url || r.resource_url || r.link || '',
+            resource_url: r.resource_url || r.url || r.link || '',
+            link: r.link || r.resource_url || r.url || ''
+          }))
+        }
         if (activeRows.length > 0) {
           if (table === 'events') {
             return { data: sortEventsByDate(activeRows, !ascending), error: null }
@@ -802,13 +816,13 @@ export const dbInsert = async (table, row) => {
     created_at: new Date().toISOString()
   }
 
-  // Only assign string ID if the table is NOT events (events uses auto-increment bigint in Supabase)
-  if (table !== 'events') {
+  // Only assign string ID if the table is NOT events or resources (both use auto-increment bigint in Supabase)
+  if (table !== 'events' && table !== 'resources') {
     if (!newRow.id) {
       newRow.id = `row_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
     }
   } else {
-    // If table is events and row.id is a string, remove it so PostgreSQL generates the bigint
+    // If table is events or resources and row.id is a string, remove it so PostgreSQL generates the serial id
     if (typeof newRow.id === 'string' && isNaN(Number(newRow.id))) {
       delete newRow.id
     }
@@ -816,11 +830,47 @@ export const dbInsert = async (table, row) => {
 
   if (isSupabaseConfigured) {
     try {
-      const res = await supabase.from(table).insert(newRow).select().single()
+      let insertPayload = { ...newRow }
+      if (table === 'resources') {
+        const title = newRow.title || newRow.label || 'Resource'
+        const label = newRow.resource_label || newRow.label || title
+        const related = newRow.related_event || newRow.event_id || ''
+        const icon = newRow.icon_type || newRow.icon || 'slideshow'
+        const url = newRow.resource_url || newRow.url || newRow.link || ''
+
+        insertPayload = {
+          title,
+          resource_label: label,
+          related_event: related,
+          icon_type: icon,
+          resource_url: url,
+          link: url,
+          is_deleted: false,
+          created_at: newRow.created_at
+        }
+        if (typeof newRow.id === 'number' || (typeof newRow.id === 'string' && !isNaN(Number(newRow.id)))) {
+          insertPayload.id = Number(newRow.id)
+        }
+      }
+
+      const res = await supabase.from(table).insert(insertPayload).select().single()
       if (!res.error && res.data) {
+        const normalized = table === 'resources' ? {
+          ...res.data,
+          event_id: res.data.event_id || res.data.related_event,
+          related_event: res.data.related_event || res.data.event_id,
+          label: res.data.label || res.data.resource_label || res.data.title,
+          resource_label: res.data.resource_label || res.data.label || res.data.title,
+          icon: res.data.icon || res.data.icon_type || 'slideshow',
+          icon_type: res.data.icon_type || res.data.icon || 'slideshow',
+          url: res.data.url || res.data.resource_url || res.data.link || '',
+          resource_url: res.data.resource_url || res.data.url || res.data.link || '',
+          link: res.data.link || res.data.resource_url || res.data.url || ''
+        } : res.data
+
         const list = getLocalData(table)
-        setLocalData(table, [res.data, ...list])
-        return res
+        setLocalData(table, [normalized, ...list])
+        return { data: normalized, error: null }
       }
       if (res.error) {
         console.warn(`Supabase insert failed for ${table}:`, res.error.message)
@@ -842,16 +892,47 @@ export const dbUpdate = async (table, id, row) => {
   if (isSupabaseConfigured) {
     try {
       // Clean up row so we don't update immutable fields
-      const updateData = { ...row }
+      let updateData = { ...row }
       delete updateData.id
       delete updateData.created_at
 
+      if (table === 'resources') {
+        const title = updateData.title || updateData.label || 'Resource'
+        const label = updateData.resource_label || updateData.label || title
+        const related = updateData.related_event || updateData.event_id || ''
+        const icon = updateData.icon_type || updateData.icon || 'slideshow'
+        const url = updateData.resource_url || updateData.url || updateData.link || ''
+
+        updateData = {
+          title,
+          resource_label: label,
+          related_event: related,
+          icon_type: icon,
+          resource_url: url,
+          link: url,
+          is_deleted: false
+        }
+      }
+
       const res = await supabase.from(table).update(updateData).eq('id', id).select().single()
       if (!res.error && res.data) {
+        const normalized = table === 'resources' ? {
+          ...res.data,
+          event_id: res.data.event_id || res.data.related_event,
+          related_event: res.data.related_event || res.data.event_id,
+          label: res.data.label || res.data.resource_label || res.data.title,
+          resource_label: res.data.resource_label || res.data.label || res.data.title,
+          icon: res.data.icon || res.data.icon_type || 'slideshow',
+          icon_type: res.data.icon_type || res.data.icon || 'slideshow',
+          url: res.data.url || res.data.resource_url || res.data.link || '',
+          resource_url: res.data.resource_url || res.data.url || res.data.link || '',
+          link: res.data.link || res.data.resource_url || res.data.url || ''
+        } : res.data
+
         const list = getLocalData(table)
-        const updated = list.map((item) => (String(item.id) === String(id) ? { ...item, ...res.data } : item))
+        const updated = list.map((item) => (String(item.id) === String(id) ? { ...item, ...normalized } : item))
         setLocalData(table, updated)
-        return res
+        return { data: normalized, error: null }
       }
       if (res.error) {
         console.warn(`Supabase update error for ${table}:`, res.error.message)

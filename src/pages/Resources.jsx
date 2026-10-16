@@ -515,11 +515,14 @@ const Resources = () => {
       const mapped = baseEvents.map(ev => {
         // Collect resources from DB matching this event (by ID or title)
         const dbMatched = resList
-          .filter(r => r.event_id === ev.id || r.event_id === ev.title)
+          .filter(r => {
+            const rEv = r.event_id || r.related_event
+            return String(rEv) === String(ev.id) || String(rEv) === String(ev.title) || rEv === ev.id
+          })
           .map(r => ({
-            label: r.label,
-            icon: r.icon || 'slideshow',
-            url: r.url
+            label: r.label || r.resource_label || r.title,
+            icon: r.icon || r.icon_type || 'slideshow',
+            url: r.url || r.resource_url || r.link
           }))
 
         // If the DB has resources, use DB resources (enabling add/edit/delete from admin).
