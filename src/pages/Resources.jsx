@@ -512,24 +512,36 @@ const Resources = () => {
       const resList = dbRes || []
       const hasDbResources = resList.length > 0
 
+      const isMatch = (rEv, ev) => {
+        if (!rEv || !ev) return false
+        const rStr = String(rEv).trim().toLowerCase()
+        const evId = String(ev.id || '').trim().toLowerCase()
+        const evTitle = String(ev.title || '').trim().toLowerCase()
+        const evSlug = evTitle.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+        const rSlug = rStr.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
+        return (
+          rStr === evId ||
+          rStr === evTitle ||
+          rSlug === evSlug ||
+          evTitle.includes(rStr) ||
+          rStr.includes(evTitle)
+        )
+      }
+
       const mapped = baseEvents.map(ev => {
-        // Collect resources from DB matching this event (by ID or title)
+        // Collect resources from DB matching this event (by ID, title, or slug)
         const dbMatched = resList
-          .filter(r => {
-            const rEv = r.event_id || r.related_event
-            return String(rEv) === String(ev.id) || String(rEv) === String(ev.title) || rEv === ev.id
-          })
+          .filter(r => isMatch(r.event_id || r.related_event, ev))
           .map(r => ({
             label: r.label || r.resource_label || r.title,
             icon: r.icon || r.icon_type || 'slideshow',
             url: r.url || r.resource_url || r.link
           }))
 
-        // If the DB has resources, use DB resources (enabling add/edit/delete from admin).
-        // Otherwise fallback to hardcoded event.resources.
-        const finalResources = hasDbResources
-          ? dbMatched
-          : (ev.resources || [])
+        // If this specific event has custom resources in DB, use them!
+        // Otherwise fallback to its default/seed resources so users always see the resource buttons!
+        const finalResources = dbMatched.length > 0 ? dbMatched : (ev.resources || [])
 
         return {
           ...ev,
