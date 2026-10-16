@@ -722,8 +722,19 @@ export const dbFetch = async (table, order = 'created_at', ascending = false) =>
 export const dbInsert = async (table, row) => {
   const newRow = {
     ...row,
-    id: row.id || `row_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     created_at: new Date().toISOString()
+  }
+
+  // Only assign string ID if the table is NOT events (events uses auto-increment bigint in Supabase)
+  if (table !== 'events') {
+    if (!newRow.id) {
+      newRow.id = `row_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+    }
+  } else {
+    // If table is events and row.id is a string, remove it so PostgreSQL generates the bigint
+    if (typeof newRow.id === 'string' && isNaN(Number(newRow.id))) {
+      delete newRow.id
+    }
   }
 
   if (isSupabaseConfigured) {
@@ -734,9 +745,13 @@ export const dbInsert = async (table, row) => {
         setLocalData(table, [res.data, ...list])
         return res
       }
-      console.warn(`Supabase insert failed for ${table}:`, res.error?.message)
+      if (res.error) {
+        console.warn(`Supabase insert failed for ${table}:`, res.error.message)
+        return { data: null, error: res.error }
+      }
     } catch (e) {
       console.warn(`Supabase insert exception:`, e)
+      return { data: null, error: e }
     }
   }
 
@@ -749,50 +764,76 @@ export const dbInsert = async (table, row) => {
 export const dbUpdate = async (table, id, row) => {
   if (isSupabaseConfigured) {
     try {
-      const res = await supabase.from(table).update(row).eq('id', id).select().single()
+      // Clean up row so we don't update immutable fields
+      const updateData = { ...row }
+      delete updateData.id
+      delete updateData.created_at
+
+      const res = await supabase.from(table).update(updateData).eq('id', id).select().single()
       if (!res.error && res.data) {
         const list = getLocalData(table)
-        const updated = list.map((item) => (item.id === id ? { ...item, ...res.data } : item))
+        const updated = list.map((item) => (String(item.id) === String(id) ? { ...item, ...res.data } : item))
         setLocalData(table, updated)
         return res
       }
+      if (res.error) {
+        console.warn(`Supabase update error for ${table}:`, res.error.message)
+        return { data: null, error: res.error }
+      }
     } catch (e) {
       console.warn(`Supabase update exception:`, e)
+      return { data: null, error: e }
     }
   }
 
   const list = getLocalData(table)
-  const updated = list.map((item) => (item.id === id ? { ...item, ...row } : item))
+  const updated = list.map((item) => (String(item.id) === String(id) ? { ...item, ...row } : item))
   setLocalData(table, updated)
-  const found = updated.find((item) => item.id === id) || null
+  const found = updated.find((item) => String(item.id) === String(id)) || null
   return { data: found, error: null }
 }
 
 export const dbDelete = async (table, id) => {
   if (isSupabaseConfigured) {
     try {
-      const res = await supabase.from(table).delete().eq('id', id)
+      // 1. Try hard delete first
+      let res = await supabase.from(table).delete().eq('id', id)
+      
+      // 2. If hard delete fails (e.g. foreign key or soft-delete schema), try soft delete
+      if (res.error) {
+        console.warn(`Hard delete failed for ${table}, trying soft delete:`, res.error.message)
+        const softRes = await supabase.from(table).update({ is_deleted: true }).eq('id', id)
+        if (!softRes.error) {
+          res = { error: null }
+        }
+      }
+
       if (!res.error) {
         recordDeletedId(table, id)
         const list = getLocalData(table)
-        const updated = list.filter((item) => item.id !== id)
+        const updated = list.filter((item) => String(item.id) !== String(id))
         setLocalData(table, updated)
         return res
       }
+      if (res.error) {
+        console.warn(`Supabase delete failed for ${table}:`, res.error.message)
+        return { error: res.error }
+      }
     } catch (e) {
       console.warn(`Supabase delete exception:`, e)
+      return { error: e }
     }
   }
 
   recordDeletedId(table, id)
   const list = getLocalData(table)
-  const updated = list.filter((item) => item.id !== id)
+  const updated = list.filter((item) => String(item.id) !== String(id))
   setLocalData(table, updated)
 
   // Cascade delete resources when an event is deleted
   if (table === 'events') {
     const resList = getLocalData('resources')
-    const updatedRes = resList.filter(r => r.event_id !== id)
+    const updatedRes = resList.filter(r => String(r.event_id) !== String(id))
     if (updatedRes.length !== resList.length) {
       setLocalData('resources', updatedRes)
     }
