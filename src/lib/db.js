@@ -645,24 +645,32 @@ const setLocalData = (table, data) => {
   }
 }
 
-// ── Google Drive & Direct Image Link Helper (0 MB Supabase Storage) ──
-export const convertGoogleDriveUrl = (url) => {
+// ── Universal Media URL Converter: Google Drive + GitHub Live CDN + Direct links (0 MB Supabase Storage) ──
+export const convertMediaUrl = (url) => {
   if (!url || typeof url !== 'string') return url
   const trimmed = url.trim()
 
-  // Case 1: https://drive.google.com/file/d/FILE_ID/view...
+  // Case A: GitHub Blob / Raw links (convert to direct raw CDN)
+  // e.g. https://github.com/user/repo/blob/main/path/to/img.jpg -> https://raw.githubusercontent.com/user/repo/main/path/to/img.jpg
+  const githubBlobMatch = trimmed.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/(?:blob|raw)\/(.+)$/)
+  if (githubBlobMatch) {
+    const [, owner, repo, rest] = githubBlobMatch
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${rest}`
+  }
+
+  // Case B: Google Drive - https://drive.google.com/file/d/FILE_ID/view...
   const matchFileD = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/)
   if (matchFileD && matchFileD[1]) {
     return `https://lh3.googleusercontent.com/d/${matchFileD[1]}`
   }
 
-  // Case 2: https://drive.google.com/open?id=FILE_ID or ?id=FILE_ID
+  // Case C: Google Drive - https://drive.google.com/open?id=FILE_ID or ?id=FILE_ID
   const matchIdParam = trimmed.match(/drive\.google\.com\/.*[?&]id=([a-zA-Z0-9_-]+)/)
   if (matchIdParam && matchIdParam[1]) {
     return `https://lh3.googleusercontent.com/d/${matchIdParam[1]}`
   }
 
-  // Case 3: https://drive.google.com/uc?id=FILE_ID
+  // Case D: Google Drive - https://drive.google.com/uc?id=FILE_ID
   const matchUc = trimmed.match(/drive\.google\.com\/uc\?.*id=([a-zA-Z0-9_-]+)/)
   if (matchUc && matchUc[1]) {
     return `https://lh3.googleusercontent.com/d/${matchUc[1]}`
@@ -670,6 +678,9 @@ export const convertGoogleDriveUrl = (url) => {
 
   return trimmed
 }
+
+// Backward-compatible alias
+export const convertGoogleDriveUrl = convertMediaUrl
 
 // Local Base64 fallback (0 MB Supabase Storage used)
 export const uploadImage = async (file) => {

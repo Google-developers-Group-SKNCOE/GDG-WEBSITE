@@ -82,22 +82,32 @@ import { uploadImage, convertGoogleDriveUrl } from '../lib/db'
 
 export const ImageUpload = ({ label = 'Image', value, onChange }) => {
   const [urlInput, setUrlInput] = useState(value || '')
-  const [isDrive, setIsDrive] = useState(false)
+  const [sourceType, setSourceType] = useState('') // 'drive' | 'github' | ''
   const [uploading, setUploading] = useState(false)
   const [err, setErr] = useState('')
 
   useEffect(() => {
     setUrlInput(value || '')
-    const isGdrive = value && (value.includes('googleusercontent.com') || value.includes('drive.google.com'))
-    setIsDrive(Boolean(isGdrive))
+    if (value) {
+      if (value.includes('googleusercontent.com') || value.includes('drive.google.com')) setSourceType('drive')
+      else if (value.includes('githubusercontent.com') || value.includes('github.com')) setSourceType('github')
+      else setSourceType('')
+    } else {
+      setSourceType('')
+    }
   }, [value])
 
   const handleUrlChange = (e) => {
     const raw = e.target.value
     setUrlInput(raw)
     const converted = convertGoogleDriveUrl(raw)
-    const wasDrive = raw.includes('drive.google.com') || converted.includes('googleusercontent.com')
-    setIsDrive(Boolean(wasDrive))
+    if (raw.includes('github.com') || converted.includes('githubusercontent.com')) {
+      setSourceType('github')
+    } else if (raw.includes('drive.google.com') || converted.includes('googleusercontent.com')) {
+      setSourceType('drive')
+    } else {
+      setSourceType('')
+    }
     onChange(converted)
   }
 
@@ -109,7 +119,7 @@ export const ImageUpload = ({ label = 'Image', value, onChange }) => {
     try {
       const url = await uploadImage(file)
       setUrlInput(url)
-      setIsDrive(false)
+      setSourceType('')
       onChange(url)
     } catch (ex) {
       setErr(ex.message)
@@ -123,7 +133,7 @@ export const ImageUpload = ({ label = 'Image', value, onChange }) => {
         {label && <label className="text-[10px] font-black uppercase tracking-widest text-black/70">{label}</label>}
         <span className="text-[9px] font-black uppercase text-success bg-success/10 px-2 py-0.5 border border-success/30 flex items-center gap-1">
           <span className="material-symbols-outlined !text-xs">cloud_done</span>
-          Google Drive (0 MB Supabase Storage)
+          Google Drive + GitHub Live CDN
         </span>
       </div>
 
@@ -132,13 +142,13 @@ export const ImageUpload = ({ label = 'Image', value, onChange }) => {
           type="text"
           value={urlInput}
           onChange={handleUrlChange}
-          placeholder="Paste Google Drive link (e.g. drive.google.com/file/d/...)"
+          placeholder="Paste Google Drive OR GitHub link (e.g. github.com/.../photo.jpg or drive.google.com/...)"
           className="w-full border-2 border-black px-3 py-2.5 text-xs font-bold text-black bg-white focus:outline-none focus:border-primary transition-all placeholder:text-black/35 pr-10"
         />
         {urlInput && (
           <button
             type="button"
-            onClick={() => { setUrlInput(''); setIsDrive(false); onChange('') }}
+            onClick={() => { setUrlInput(''); setSourceType(''); onChange('') }}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-black/40 hover:text-danger text-sm font-black p-1"
             title="Clear image"
           >
@@ -147,16 +157,23 @@ export const ImageUpload = ({ label = 'Image', value, onChange }) => {
         )}
       </div>
 
-      {isDrive && (
+      {sourceType === 'drive' && (
         <div className="text-[10px] font-black uppercase text-success flex items-center gap-1">
           <span className="material-symbols-outlined !text-sm">check_circle</span>
-          Google Drive link auto-converted to direct live image
+          Google Drive link auto-converted to direct live CDN image
         </div>
       )}
 
-      {/* Quick local file option */}
+      {sourceType === 'github' && (
+        <div className="text-[10px] font-black uppercase text-primary flex items-center gap-1">
+          <span className="material-symbols-outlined !text-sm">check_circle</span>
+          GitHub Repository link auto-converted to direct raw CDN image
+        </div>
+      )}
+
+      {/* Quick guide / local upload */}
       <div className="flex items-center justify-between text-[10px] text-black/50 font-bold">
-        <span>👉 On Drive: Right-click image → <b>Share: Anyone with the link</b> → Paste above</span>
+        <span>👉 Paste from <b>Google Drive</b> (Anyone with link) or <b>GitHub repository</b></span>
         <label className="text-black/60 hover:text-black hover:underline cursor-pointer flex items-center gap-1 uppercase font-black text-[9px]">
           <span className="material-symbols-outlined !text-xs">upload</span>
           {uploading ? 'Processing...' : 'or pick local file'}
