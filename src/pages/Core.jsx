@@ -66,11 +66,64 @@ const Core = () => {
     return 3
   }
 
+  const extractDomain = (m) => {
+    const text = `${m.roleTag || ''} ${m.category || ''}`.toLowerCase()
+    if (text.includes('ai') || text.includes('ml') || text.includes('machine learning')) return 'aiml'
+    if (text.includes('web')) return 'web'
+    if (text.includes('ui') || text.includes('ux') || text.includes('design')) return 'uiux'
+    if (text.includes('event')) return 'events'
+    if (text.includes('android') || text.includes('app')) return 'android'
+    if (text.includes('cloud')) return 'cloud'
+    if (text.includes('cyber') || text.includes('security')) return 'cyber'
+    if (text.includes('competitive') || text.includes('cp')) return 'cp'
+    if (text.includes('social')) return 'social'
+    if (text.includes('sponsor')) return 'sponsorship'
+    if (text.includes('women') || text.includes('wit')) return 'wit'
+    return 'other'
+  }
+
+  const isCoLead = (m) => {
+    const role = (m.roleTag || '').toLowerCase()
+    const cat = (m.category || '').toLowerCase()
+    return role.includes('co-') || role.includes('colead') || role.includes('co lead') || cat.includes('co-')
+  }
+
+  const domainOrder = [
+    'aiml',
+    'web',
+    'uiux',
+    'events',
+    'android',
+    'cloud',
+    'cyber',
+    'cp',
+    'social',
+    'sponsorship',
+    'wit',
+    'other'
+  ]
+
   const leadership = team
     .filter(isLeadership)
     .sort((a, b) => getRank(a) - getRank(b))
 
-  const domainMembers = team.filter(m => !isLeadership(m))
+  // Sort domain members so that Lead and Co-Lead of each domain sit side-by-side in the 2-column grid
+  const domainMembers = team
+    .filter(m => !isLeadership(m))
+    .sort((a, b) => {
+      const domA = extractDomain(a)
+      const domB = extractDomain(b)
+      const orderA = domainOrder.indexOf(domA)
+      const orderB = domainOrder.indexOf(domB)
+      if (orderA !== orderB) return orderA - orderB
+
+      // Lead comes first, Co-Lead immediately follows so they appear side-by-side
+      const coA = isCoLead(a) ? 1 : 0
+      const coB = isCoLead(b) ? 1 : 0
+      if (coA !== coB) return coA - coB
+
+      return (a.name || '').localeCompare(b.name || '')
+    })
 
   return (
     <div className="grid-bg min-h-screen border-x-0 md:border-x-4 border-black max-w-screen-2xl mx-auto overflow-hidden">
