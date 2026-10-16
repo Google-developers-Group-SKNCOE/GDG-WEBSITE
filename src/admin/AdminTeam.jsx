@@ -4,7 +4,7 @@ import { dbFetch, dbInsert, dbUpdate, dbDelete } from '../lib/db'
 import { AdminHeader, AdminBtn, AdminInput, AdminSelect, ImageUpload, StatusBadge, Spinner, EmptyState } from './AdminUI'
 
 const COLORS = ['bg-primary', 'bg-success', 'bg-warning', 'bg-danger']
-const CATEGORIES = ['Organizer', 'Co-Organizer', 'Lead', 'Co-Lead', 'Mentor', 'Core Member']
+const CATEGORIES = ['Organizer', 'Co-Organizer', 'Lead', 'Co-Lead', 'Mentor']
 
 const BLANK_MEMBER = {
   name: '',

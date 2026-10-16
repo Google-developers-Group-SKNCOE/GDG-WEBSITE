@@ -58,7 +58,6 @@ const Core = () => {
   const mentors = team.filter(m => m.category === 'Mentor' || m.roleTag?.toLowerCase().includes('mentor'))
   const leads = team.filter(m => (m.category === 'Lead' || (m.roleTag?.toLowerCase().includes('lead') && !m.roleTag?.toLowerCase().includes('co-lead'))) && !organizers.includes(m) && !coOrganizers.includes(m) && !mentors.includes(m))
   const coLeads = team.filter(m => (m.category === 'Co-Lead' || m.roleTag?.toLowerCase().includes('co-lead')) && !organizers.includes(m) && !coOrganizers.includes(m) && !mentors.includes(m))
-  const coreMembers = team.filter(m => !organizers.includes(m) && !coOrganizers.includes(m) && !mentors.includes(m) && !leads.includes(m) && !coLeads.includes(m))
 
   const FILTER_TABS = [
     { id: 'All', label: 'All Members', count: team.length },
@@ -66,7 +65,6 @@ const Core = () => {
     ...(mentors.length > 0 ? [{ id: 'Mentors', label: 'Mentors', count: mentors.length }] : []),
     { id: 'Leads', label: 'Leads', count: leads.length },
     { id: 'Co-Leads', label: 'Co-Leads', count: coLeads.length },
-    ...(coreMembers.length > 0 ? [{ id: 'Core', label: 'Core Members', count: coreMembers.length }] : []),
   ]
 
   return (
@@ -166,23 +164,6 @@ const Core = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
               {coLeads.map((person, idx) => (
-                <LeaderCard key={person.id || person.name} person={person} index={idx} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* 5. Core Members Section (if any) */}
-        {(filter === 'All' || filter === 'Core') && coreMembers.length > 0 && (
-          <section className="mb-16">
-            <div className="flex items-center gap-4 md:gap-6 mb-10">
-              <h2 className="font-headline text-2xl md:text-4xl font-black text-black bg-surface-dark border-4 border-black px-4 md:px-6 py-2 shadow-brutal uppercase">
-                Core Members
-              </h2>
-              <div className="h-2 flex-1 bg-black hidden sm:block"></div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-              {coreMembers.map((person, idx) => (
                 <LeaderCard key={person.id || person.name} person={person} index={idx} />
               ))}
             </div>
