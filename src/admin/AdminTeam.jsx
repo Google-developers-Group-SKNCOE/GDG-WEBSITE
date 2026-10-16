@@ -164,10 +164,7 @@ const AdminTeam = () => {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                    <span className="inline-block px-1.5 py-0.5 text-[8px] font-black uppercase text-black bg-surface-dark border border-black/30">
-                      {member.category || 'Member'}
-                    </span>
+                  <div className="mb-1">
                     <span className={`inline-block px-2 py-0.5 text-[9px] font-black uppercase text-white border border-black ${member.roleColor || 'bg-primary'}`}>
                       {member.roleTag}
                     </span>
