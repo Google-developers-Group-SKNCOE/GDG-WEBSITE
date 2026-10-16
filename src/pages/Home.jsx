@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
-import { dbFetch, convertGoogleDriveUrl } from '../lib/db'
+import { dbFetch, convertGoogleDriveUrl, SEEDS } from '../lib/db'
 
 const domains = [
   { icon: 'html', title: 'Web Development', classColor: 'text-primary' },
@@ -18,15 +18,6 @@ const domains = [
   { icon: '😊', title: 'Wanna Join Us ?', classColor: 'text-primary', isEmoji: true }
 ]
 
-const partners = [
-  "/sponsors/WhatsApp Image 2026-05-01 at 3.07.58 PM.jpeg",
-  "/sponsors/WhatsApp Image 2026-05-01 at 3.09.10 PM.jpeg",
-  "/sponsors/WhatsApp Image 2026-05-01 at 3.10.14 PM.jpeg",
-  "/sponsors/WhatsApp Image 2026-05-01 at 3.11.00 PM.jpeg",
-  "/sponsors/WhatsApp Image 2026-05-01 at 3.12.41 PM.jpeg",
-  "/sponsors/imresizer-Soli.jpeg"
-]
-
 const Home = () => {
   const [sponsors, setSponsors] = useState([])
 
@@ -36,10 +27,26 @@ const Home = () => {
     })
   }, [])
 
-  // Use DB sponsor logos if available, otherwise fall back to hardcoded partner images
-  const displayPartners = sponsors.length > 0
-    ? sponsors.map(s => ({ src: convertGoogleDriveUrl(s.logo), name: s.name, url: s.url }))
-    : partners.map(src => ({ src, name: '', url: null }))
+  // Guarantee that all 6 partner logos are always visible
+  const activeDbPartners = (sponsors || [])
+    .filter(s => !s.is_deleted && s.logo)
+    .map(s => ({
+      src: convertGoogleDriveUrl(s.logo),
+      name: s.name || 'Partner',
+      url: s.url || null
+    }))
+
+  const defaultPartners = (SEEDS.sponsors || []).map(s => ({
+    src: s.logo,
+    name: s.name,
+    url: s.url
+  }))
+
+  const displayPartners = activeDbPartners.length >= defaultPartners.length
+    ? activeDbPartners
+    : (activeDbPartners.length > 0
+        ? [...activeDbPartners, ...defaultPartners.slice(activeDbPartners.length)]
+        : defaultPartners)
 
   return (
     <main className="relative pt-24 md:pt-32 space-y-24 md:space-y-40 grid-paper min-h-screen border-x-0 md:border-x-4 border-black max-w-screen-2xl mx-auto overflow-hidden">

@@ -168,6 +168,21 @@ values
   ('tm-24', 'Divya Bhandari', 'UI/UX Co-Lead', 'bg-success', 'Co-Lead', '/core-images/coleads/UIUX Colead.jpg', 'https://www.linkedin.com/in/divya-bhandari-14b4a1308/', '2025-09-01T23:00:00Z')
 on conflict (id) do nothing;
 
+-- 8. Seed All 6 Sponsors / Partners
+insert into public.sponsors (id, name, tier, logo, url, is_deleted, created_at)
+values
+  ('sp-1', 'Community Partner 1', 'Community Partner', '/sponsors/WhatsApp Image 2026-05-01 at 3.07.58 PM.jpeg', 'https://gdg.community.dev', false, '2026-01-01T00:00:00Z'),
+  ('sp-2', 'Community Partner 2', 'Community Partner', '/sponsors/WhatsApp Image 2026-05-01 at 3.09.10 PM.jpeg', 'https://gdg.community.dev', false, '2026-01-02T00:00:00Z'),
+  ('sp-3', 'Community Partner 3', 'Community Partner', '/sponsors/WhatsApp Image 2026-05-01 at 3.10.14 PM.jpeg', 'https://gdg.community.dev', false, '2026-01-03T00:00:00Z'),
+  ('sp-4', 'Community Partner 4', 'Community Partner', '/sponsors/WhatsApp Image 2026-05-01 at 3.11.00 PM.jpeg', 'https://gdg.community.dev', false, '2026-01-04T00:00:00Z'),
+  ('sp-5', 'Community Partner 5', 'Community Partner', '/sponsors/WhatsApp Image 2026-05-01 at 3.12.41 PM.jpeg', 'https://gdg.community.dev', false, '2026-01-05T00:00:00Z'),
+  ('sp-6', 'Soli / Media Partner', 'Media Partner', '/sponsors/imresizer-Soli.jpeg', 'https://gdg.community.dev', false, '2026-01-06T00:00:00Z')
+on conflict (id) do update set
+  is_deleted = false,
+  logo = excluded.logo,
+  tier = excluded.tier,
+  name = excluded.name;
+
 -- ==============================================================================
 -- 8. Storage Bucket Policies for gdg-media
 -- Run AFTER creating the bucket manually in Supabase Dashboard -> Storage

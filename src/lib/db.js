@@ -539,6 +539,62 @@ export const SEEDS = {
       created_at: new Date('2025-09-01T23:00:00Z').toISOString()
     }
   ],
+  sponsors: [
+    {
+      id: 'sp-1',
+      name: 'Community Partner 1',
+      tier: 'Community Partner',
+      logo: '/sponsors/WhatsApp Image 2026-05-01 at 3.07.58 PM.jpeg',
+      url: 'https://gdg.community.dev',
+      created_at: new Date('2026-01-01T00:00:00Z').toISOString(),
+      is_deleted: false
+    },
+    {
+      id: 'sp-2',
+      name: 'Community Partner 2',
+      tier: 'Community Partner',
+      logo: '/sponsors/WhatsApp Image 2026-05-01 at 3.09.10 PM.jpeg',
+      url: 'https://gdg.community.dev',
+      created_at: new Date('2026-01-02T00:00:00Z').toISOString(),
+      is_deleted: false
+    },
+    {
+      id: 'sp-3',
+      name: 'Community Partner 3',
+      tier: 'Community Partner',
+      logo: '/sponsors/WhatsApp Image 2026-05-01 at 3.10.14 PM.jpeg',
+      url: 'https://gdg.community.dev',
+      created_at: new Date('2026-01-03T00:00:00Z').toISOString(),
+      is_deleted: false
+    },
+    {
+      id: 'sp-4',
+      name: 'Community Partner 4',
+      tier: 'Community Partner',
+      logo: '/sponsors/WhatsApp Image 2026-05-01 at 3.11.00 PM.jpeg',
+      url: 'https://gdg.community.dev',
+      created_at: new Date('2026-01-04T00:00:00Z').toISOString(),
+      is_deleted: false
+    },
+    {
+      id: 'sp-5',
+      name: 'Community Partner 5',
+      tier: 'Community Partner',
+      logo: '/sponsors/WhatsApp Image 2026-05-01 at 3.12.41 PM.jpeg',
+      url: 'https://gdg.community.dev',
+      created_at: new Date('2026-01-05T00:00:00Z').toISOString(),
+      is_deleted: false
+    },
+    {
+      id: 'sp-6',
+      name: 'Soli / Media Partner',
+      tier: 'Media Partner',
+      logo: '/sponsors/imresizer-Soli.jpeg',
+      url: 'https://gdg.community.dev',
+      created_at: new Date('2026-01-06T00:00:00Z').toISOString(),
+      is_deleted: false
+    }
+  ],
   comments: []
 }
 
