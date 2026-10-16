@@ -87,6 +87,24 @@ const AdminTeam = () => {
     load()
   }
 
+  // Universal ranking function for team hierarchy
+  const getRank = (m) => {
+    const cat = (m.category || '').toLowerCase()
+    const role = (m.roleTag || '').toLowerCase()
+    const text = `${cat} ${role}`
+    if (text.includes('mentor') || text.includes('advisor') || text.includes('faculty')) return 1
+    if (text.includes('organ') && !text.includes('co')) return 2
+    if (text.includes('organ') && text.includes('co')) return 3
+    return 10
+  }
+
+  const sortedTeam = [...team].sort((a, b) => {
+    const ra = getRank(a)
+    const rb = getRank(b)
+    if (ra !== rb) return ra - rb
+    return (a.name || '').localeCompare(b.name || '')
+  })
+
   return (
     <div>
       <AdminHeader
@@ -114,11 +132,11 @@ const AdminTeam = () => {
         )}
       </AnimatePresence>
 
-      {loading ? <Spinner /> : team.length === 0 ? (
+      {loading ? <Spinner /> : sortedTeam.length === 0 ? (
         <EmptyState icon="person_off" text="No team members yet. Add the first member!" />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {team.map(member => (
+          {sortedTeam.map(member => (
             <motion.div
               key={member.id}
               layout

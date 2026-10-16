@@ -51,19 +51,26 @@ const Core = () => {
     })
   }, [])
 
-  // Categorization: Organizers & Co-Organizers upside, then all domains beneath
-  const isLeadership = (m) => {
-    const cat = (m.category || '').toLowerCase()
-    const role = (m.roleTag || '').toLowerCase()
-    return cat === 'organizer' || cat === 'co-organizer' || role.includes('organizer')
-  }
-
+  // Universal ranking function for team hierarchy:
+  // Rank 1: Mentors / Faculty Advisors (At the very top!)
+  // Rank 2: Organizers (Organiser / Organizer)
+  // Rank 3: Co-Organizers (Co-Organizer / Co-Organiser)
+  // Rank 10: Domains (AI/ML, Web, UI/UX, Events, Android, Cloud...)
   const getRank = (m) => {
     const cat = (m.category || '').toLowerCase()
     const role = (m.roleTag || '').toLowerCase()
-    if (cat === 'organizer' || (role.includes('organizer') && !role.includes('co-organizer') && !role.includes('co-'))) return 1
-    if (cat === 'co-organizer' || role.includes('co-organizer') || role.includes('co-organiser')) return 2
-    return 3
+    const text = `${cat} ${role}`
+
+    // 1. Mentors at the absolute top
+    if (text.includes('mentor') || text.includes('advisor') || text.includes('faculty')) return 1
+
+    // 2. Organizers
+    if (text.includes('organ') && !text.includes('co')) return 2
+
+    // 3. Co-Organizers
+    if (text.includes('organ') && text.includes('co')) return 3
+
+    return 10
   }
 
   const extractDomain = (m) => {
@@ -103,13 +110,19 @@ const Core = () => {
     'other'
   ]
 
-  const leadership = team
-    .filter(isLeadership)
-    .sort((a, b) => getRank(a) - getRank(b))
+  // Tier 1: Mentors
+  const mentors = team
+    .filter(m => getRank(m) === 1)
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
 
-  // Sort domain members so that Lead and Co-Lead of each domain sit side-by-side in the 2-column grid
+  // Tier 2: Organizers & Co-Organizers
+  const organizers = team
+    .filter(m => getRank(m) === 2 || getRank(m) === 3)
+    .sort((a, b) => getRank(a) - getRank(b) || (a.name || '').localeCompare(b.name || ''))
+
+  // Tier 3: Domain Leads & Co-Leads (AI/ML first, Web Dev second, then UI/UX, Events, Android, etc.)
   const domainMembers = team
-    .filter(m => !isLeadership(m))
+    .filter(m => getRank(m) >= 10)
     .sort((a, b) => {
       const domA = extractDomain(a)
       const domB = extractDomain(b)
@@ -117,7 +130,7 @@ const Core = () => {
       const orderB = domainOrder.indexOf(domB)
       if (orderA !== orderB) return orderA - orderB
 
-      // Lead comes first, Co-Lead immediately follows so they appear side-by-side
+      // Lead comes first, Co-Lead immediately follows side-by-side
       const coA = isCoLead(a) ? 1 : 0
       const coB = isCoLead(b) ? 1 : 0
       if (coA !== coB) return coA - coB
@@ -143,23 +156,34 @@ const Core = () => {
           </p>
         </section>
 
-        {/* Organizers & Co-Organizers (Upside) */}
-        {leadership.length > 0 && (
+        {/* Mentors (Top / Upside) */}
+        {mentors.length > 0 && (
           <section className="mb-8 md:mb-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-              {leadership.map((person, idx) => (
+              {mentors.map((person, idx) => (
                 <LeaderCard key={person.id || person.name} person={person} index={idx} />
               ))}
             </div>
           </section>
         )}
 
-        {/* All Domains & Leads (Beneath) */}
+        {/* Organizers & Co-Organizers (Directly Beneath Mentors) */}
+        {organizers.length > 0 && (
+          <section className="mb-8 md:mb-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
+              {organizers.map((person, idx) => (
+                <LeaderCard key={person.id || person.name} person={person} index={idx + mentors.length} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Domain Leads & Co-Leads: AI/ML, Web Dev, UI/UX, Events, Android... (Beneath Organizers) */}
         {domainMembers.length > 0 && (
           <section className="mb-16">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
               {domainMembers.map((person, idx) => (
-                <LeaderCard key={person.id || person.name} person={person} index={idx + leadership.length} />
+                <LeaderCard key={person.id || person.name} person={person} index={idx + mentors.length + organizers.length} />
               ))}
             </div>
           </section>
