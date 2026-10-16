@@ -83,16 +83,20 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    // 1. If Supabase is configured with real keys, try Supabase Auth first
+    // 1. If Supabase is configured with real keys, authenticate via Supabase Auth
     if (isSupabaseConfigured) {
       const res = await supabase.auth.signInWithPassword({ email, password })
       if (!res.error && res.data?.user) {
         localStorage.removeItem(RATE_LIMIT_KEY)
         return res
       }
+      if (res.error) {
+        bumpRateLimit()
+        return { data: null, error: { message: res.error.message || 'Supabase authentication failed.' } }
+      }
     }
 
-    // 2. Local fallback check (from .env.local)
+    // 2. Local fallback check (from .env.local) when Supabase is not configured
     const allowedEmail = import.meta.env.VITE_LOCAL_ADMIN_EMAIL
     const allowedPassword = import.meta.env.VITE_LOCAL_ADMIN_PASSWORD
 
@@ -118,7 +122,7 @@ export const AuthProvider = ({ children }) => {
     bumpRateLimit()
     return {
       data: null,
-      error: { message: 'Invalid credentials. Please check your email and password.' }
+      error: { message: isSupabaseConfigured ? 'Invalid login credentials.' : 'Supabase keys not set in .env. Enter local credentials from .env.local or add Supabase keys.' }
     }
   }
 
