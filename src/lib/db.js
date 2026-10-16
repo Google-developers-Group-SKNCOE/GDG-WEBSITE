@@ -687,11 +687,14 @@ export const dbFetch = async (table, order = 'created_at', ascending = false) =>
   if (isSupabaseConfigured) {
     try {
       const res = await supabase.from(table).select('*').order(order, { ascending })
-      if (!res.error && res.data && res.data.length > 0) {
-        if (table === 'events') {
-          return { data: sortEventsByDate(res.data, !ascending), error: null }
+      if (!res.error && res.data) {
+        const activeRows = res.data.filter(item => !item.is_deleted)
+        if (activeRows.length > 0) {
+          if (table === 'events') {
+            return { data: sortEventsByDate(activeRows, !ascending), error: null }
+          }
+          return { data: activeRows, error: null }
         }
-        return res
       }
       if (res.error) {
         console.warn(`Supabase query for ${table} had an error, using local fallback:`, res.error?.message)
