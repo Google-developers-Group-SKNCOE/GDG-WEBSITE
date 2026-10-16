@@ -4,7 +4,7 @@ import { dbFetch, dbInsert, dbUpdate, dbDelete } from '../lib/db'
 import { AdminHeader, AdminBtn, AdminInput, AdminSelect, ImageUpload, StatusBadge, Spinner, EmptyState } from './AdminUI'
 
 const COLORS = ['bg-primary', 'bg-success', 'bg-warning', 'bg-danger']
-const CATEGORIES = ['Organizer', 'Lead', 'Co-Lead', 'Core Member']
+const CATEGORIES = ['Organizer', 'Co-Organizer', 'Lead', 'Co-Lead', 'Mentor', 'Core Member']
 
 const BLANK_MEMBER = {
   name: '',
@@ -24,8 +24,8 @@ const TeamForm = ({ initial = BLANK_MEMBER, onSave, onCancel, saving }) => {
     <form onSubmit={(e) => { e.preventDefault(); onSave(form) }} className="bg-white border-4 border-black shadow-brutal p-6 flex flex-col gap-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <AdminInput label="Full Name *" value={form.name} onChange={set('name')} required placeholder="e.g. Jane Doe" />
-        <AdminInput label="Role / Title *" value={form.roleTag} onChange={set('roleTag')} required placeholder="e.g. AI/ML Lead" />
-        <AdminSelect label="Category" value={form.category} onChange={set('category')}>
+        <AdminInput label="Role / Title *" value={form.roleTag} onChange={set('roleTag')} required placeholder="e.g. AI/ML Lead or Mentor" />
+        <AdminSelect label="Section / Category *" value={form.category} onChange={set('category')}>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </AdminSelect>
         <AdminSelect label="Badge Color" value={form.roleColor} onChange={set('roleColor')}>
@@ -61,6 +61,7 @@ const AdminTeam = () => {
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState(null)
+  const [selectedCategory, setSelectedCategory] = useState('All')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -87,6 +88,11 @@ const AdminTeam = () => {
     load()
   }
 
+  const categoryOptions = ['All', ...CATEGORIES]
+  const filteredTeam = selectedCategory === 'All'
+    ? team
+    : team.filter(m => m.category === selectedCategory || (selectedCategory === 'Organizer' && m.roleTag?.toLowerCase().includes('organizer')))
+
   return (
     <div>
       <AdminHeader
@@ -101,6 +107,27 @@ const AdminTeam = () => {
         }
       />
 
+      {/* Category Filter Tabs */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {categoryOptions.map(cat => {
+          const count = cat === 'All' ? team.length : team.filter(m => m.category === cat).length
+          const isActive = selectedCategory === cat
+          return (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-3 py-1.5 text-xs font-black uppercase tracking-wider border-2 border-black transition-all cursor-pointer ${
+                isActive
+                  ? 'bg-black text-white shadow-brutal-sm'
+                  : 'bg-white text-black hover:bg-surface-dark'
+              }`}
+            >
+              {cat} ({count})
+            </button>
+          )
+        })}
+      </div>
+
       <AnimatePresence>
         {(showForm || editing) && (
           <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mb-8">
@@ -114,11 +141,11 @@ const AdminTeam = () => {
         )}
       </AnimatePresence>
 
-      {loading ? <Spinner /> : team.length === 0 ? (
-        <EmptyState icon="person_off" text="No team members yet. Add the first member!" />
+      {loading ? <Spinner /> : filteredTeam.length === 0 ? (
+        <EmptyState icon="person_off" text={`No team members found in "${selectedCategory}".`} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {team.map(member => (
+          {filteredTeam.map(member => (
             <motion.div
               key={member.id}
               layout
@@ -137,9 +164,14 @@ const AdminTeam = () => {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className={`inline-block px-2 py-0.5 text-[9px] font-black uppercase text-white border border-black ${member.roleColor || 'bg-primary'} mb-1`}>
-                    {member.roleTag}
-                  </span>
+                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                    <span className="inline-block px-1.5 py-0.5 text-[8px] font-black uppercase text-black bg-surface-dark border border-black/30">
+                      {member.category || 'Member'}
+                    </span>
+                    <span className={`inline-block px-2 py-0.5 text-[9px] font-black uppercase text-white border border-black ${member.roleColor || 'bg-primary'}`}>
+                      {member.roleTag}
+                    </span>
+                  </div>
                   <h3 className="font-headline font-black text-black text-base uppercase truncate leading-tight">{member.name}</h3>
                   {member.linkedin && (
                     <a href={member.linkedin} target="_blank" rel="noopener noreferrer" className="text-xs text-primary font-bold hover:underline block truncate mt-0.5">
