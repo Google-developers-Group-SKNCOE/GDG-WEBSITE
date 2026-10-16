@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import { dbFetch } from '../lib/db'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 const domains = [
   { icon: 'html', title: 'Web Development', classColor: 'text-primary' },
@@ -17,15 +20,30 @@ const domains = [
 ]
 
 const partners = [
-  "/sponsors/WhatsApp Image 2026-05-01 at 3.07.58 PM.jpeg",
-  "/sponsors/WhatsApp Image 2026-05-01 at 3.09.10 PM.jpeg",
-  "/sponsors/WhatsApp Image 2026-05-01 at 3.10.14 PM.jpeg",
-  "/sponsors/WhatsApp Image 2026-05-01 at 3.11.00 PM.jpeg",
-  "/sponsors/WhatsApp Image 2026-05-01 at 3.12.41 PM.jpeg",
-  "/sponsors/imresizer-Soli.jpeg"
+  { id: 'local-1', name: 'Partner 1', logo: "/sponsors/WhatsApp Image 2026-05-01 at 3.07.58 PM.jpeg", url: '' },
+  { id: 'local-2', name: 'Partner 2', logo: "/sponsors/WhatsApp Image 2026-05-01 at 3.09.10 PM.jpeg", url: '' },
+  { id: 'local-3', name: 'Partner 3', logo: "/sponsors/WhatsApp Image 2026-05-01 at 3.10.14 PM.jpeg", url: '' },
+  { id: 'local-4', name: 'Partner 4', logo: "/sponsors/WhatsApp Image 2026-05-01 at 3.11.00 PM.jpeg", url: '' },
+  { id: 'local-5', name: 'Partner 5', logo: "/sponsors/WhatsApp Image 2026-05-01 at 3.12.41 PM.jpeg", url: '' },
+  { id: 'local-6', name: 'Soli', logo: "/sponsors/imresizer-Soli.jpeg", url: '' }
 ]
 
 const Home = () => {
+  const [sponsors, setSponsors] = useState(partners)
+
+  useEffect(() => {
+    const loadSponsors = async () => {
+      const { data } = await dbFetch('sponsors')
+      const visibleSponsors = (data || []).filter((sponsor) => sponsor.logo)
+      const hasLocalAdminChanges = visibleSponsors.some((sponsor) => sponsor.id !== 'sp-1')
+      if (visibleSponsors.length > 0 && (isSupabaseConfigured || hasLocalAdminChanges)) {
+        setSponsors(visibleSponsors)
+      }
+    }
+
+    loadSponsors()
+  }, [])
+
   return (
     <main className="relative pt-24 md:pt-32 space-y-24 md:space-y-40 grid-paper min-h-screen border-x-0 md:border-x-4 border-black max-w-screen-2xl mx-auto overflow-hidden">
 
@@ -122,14 +140,21 @@ const Home = () => {
         </div>
         <div className="w-full py-3">
           <div className="flex animate-marquee items-center" style={{ width: 'max-content' }}>
-            {[...partners, ...partners].map((src, idx) => (
-              <div key={idx} className="brutal-card bg-white p-2 w-32 h-32 md:w-40 md:h-40 flex items-center justify-center shrink-0 mx-4 md:mx-6">
+            {[...sponsors, ...sponsors].map((sponsor, idx) => (
+              <a
+                key={`${sponsor.id || sponsor.name}-${idx}`}
+                href={sponsor.url || undefined}
+                target={sponsor.url ? '_blank' : undefined}
+                rel={sponsor.url ? 'noopener noreferrer' : undefined}
+                className="brutal-card bg-white p-2 w-32 h-32 md:w-40 md:h-40 flex items-center justify-center shrink-0 mx-4 md:mx-6"
+                aria-label={sponsor.name}
+              >
                 <img
                   className="w-full h-full object-contain filter grayscale contrast-200 hover:grayscale-0 transition-all duration-300 hover:scale-[1.04] cursor-pointer"
-                  alt={`Partner ${idx + 1}`}
-                  src={src}
+                  alt={sponsor.name || `Partner ${idx + 1}`}
+                  src={sponsor.logo}
                 />
-              </div>
+              </a>
             ))}
           </div>
         </div>

@@ -1,22 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { AdminHeader, AdminBtn, Spinner, EmptyState } from './AdminUI'
-
-const STORAGE_KEY = 'gdg_community_comments'
+import { dbDelete, dbFetch } from '../lib/db'
 
 const AdminComments = () => {
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('')
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     setLoading(true)
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      setComments(raw ? JSON.parse(raw) : [])
-    } catch {
-      setComments([])
-    }
+    const { data } = await dbFetch('comments')
+    setComments(data || [])
     setLoading(false)
   }, [])
 
@@ -24,14 +19,14 @@ const AdminComments = () => {
 
   const handleDelete = (id) => {
     if (!confirm('Are you sure you want to delete this comment?')) return
-    const updated = comments.filter(c => c.id !== id)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-    setComments(updated)
+    dbDelete('comments', id).then(() => {
+      setComments(comments.filter(c => c.id !== id))
+    })
   }
 
-  const handleClearAll = () => {
+  const handleClearAll = async () => {
     if (!confirm('⚠️ WARNING: This will delete ALL comments. Continue?')) return
-    localStorage.removeItem(STORAGE_KEY)
+    await Promise.all(comments.map((comment) => dbDelete('comments', comment.id)))
     setComments([])
   }
 
@@ -105,7 +100,7 @@ const AdminComments = () => {
                       </span>
                     )}
                     <span className="text-[10px] font-bold text-black/40">
-                      {new Date(c.createdAt).toLocaleString()}
+                      {new Date(c.createdAt || c.timestamp || c.created_at).toLocaleString()}
                     </span>
                   </div>
                   <p className="text-black text-sm font-bold leading-relaxed whitespace-pre-wrap">{c.message}</p>

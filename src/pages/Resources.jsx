@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { dbFetch } from '../lib/db'
+import { dbFetch, dbInsert, dbUpdate } from '../lib/db'
 
 // ─── Event Resources Data ─────────────────────────────────────────────────────
 const eventResources = [
@@ -157,21 +157,6 @@ const eventResources = [
 ]
 
 // ─── Comment Helpers ──────────────────────────────────────────────────────────
-const STORAGE_KEY = 'gdg_community_comments'
-
-const loadComments = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-
-const saveComments = (comments) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(comments))
-}
-
 const avatarColors = ['bg-primary', 'bg-danger', 'bg-warning', 'bg-success']
 const getAvatarColor = (name) =>
   avatarColors[name.charCodeAt(0) % avatarColors.length]
@@ -246,7 +231,7 @@ const ResourceCard = ({ event, index }) => (
 
 // ─── Community Section ────────────────────────────────────────────────────────
 const CommunitySection = () => {
-  const [comments, setComments] = useState(loadComments)
+  const [comments, setComments] = useState([])
   const [name, setName] = useState('')
   const [eventRef, setEventRef] = useState('')
   const [message, setMessage] = useState('')
@@ -254,11 +239,20 @@ const CommunitySection = () => {
   const [submitted, setSubmitted] = useState(false)
   const [filter, setFilter] = useState('All')
 
+  const loadComments = async () => {
+    const { data } = await dbFetch('comments')
+    setComments(data || [])
+  }
+
+  useEffect(() => {
+    loadComments()
+  }, [])
+
   const allFilters = ['All', ...eventResources.map((e) => e.title), 'General']
   const filteredComments =
     filter === 'All' ? comments : comments.filter((c) => c.eventRef === filter)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!name.trim() || !message.trim()) {
       setError('Please fill in your name and message.')
@@ -275,9 +269,8 @@ const CommunitySection = () => {
       createdAt: new Date().toISOString(),
       likes: 0,
     }
-    const updated = [newComment, ...comments]
-    setComments(updated)
-    saveComments(updated)
+    const { data } = await dbInsert('comments', newComment)
+    setComments([data || newComment, ...comments])
     setName('')
     setEventRef('')
     setMessage('')
@@ -285,18 +278,12 @@ const CommunitySection = () => {
     setTimeout(() => setSubmitted(false), 3000)
   }
 
-  const handleLike = (id) => {
-    const updated = comments.map((c) =>
-      c.id === id ? { ...c, likes: (c.likes || 0) + 1 } : c
-    )
-    setComments(updated)
-    saveComments(updated)
-  }
-
-  const handleDelete = (id) => {
-    const updated = comments.filter((c) => c.id !== id)
-    setComments(updated)
-    saveComments(updated)
+  const handleLike = async (id) => {
+    const target = comments.find((c) => c.id === id)
+    if (!target) return
+    const likes = (target.likes || 0) + 1
+    await dbUpdate('comments', id, { likes })
+    setComments(comments.map((c) => c.id === id ? { ...c, likes } : c))
   }
 
   return (
@@ -465,12 +452,6 @@ const CommunitySection = () => {
                     >
                       <span className="material-symbols-outlined text-sm">thumb_up</span>
                       {c.likes || 0}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(c.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white border-2 border-black text-xs font-black uppercase shadow-brutal-sm hover:bg-danger hover:text-white hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all ml-auto"
-                    >
-                      <span className="material-symbols-outlined text-sm">delete</span>
                     </button>
                   </div>
                 </motion.div>

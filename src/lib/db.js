@@ -190,13 +190,13 @@ export const dbFetch = async (table, order = 'created_at', ascending = false) =>
 export const dbInsert = async (table, row) => {
   const newRow = {
     ...row,
-    id: row.id || `row_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    id: row.id ? String(row.id) : `row_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     created_at: new Date().toISOString()
   }
 
   if (isSupabaseConfigured) {
     try {
-      const res = await supabase.from(table).insert(row).select().single()
+      const res = await supabase.from(table).insert(newRow).select().single()
       if (!res.error && res.data) {
         return res
       }

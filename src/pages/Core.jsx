@@ -1,10 +1,11 @@
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-
-const PLACEHOLDER_M = "https://lh3.googleusercontent.com/aida-public/AB6AXuArJRxx1BwVSe5lNLTbBcahpFOUR7KwUsl9Ily6-Bse5yxINHIpAKFZVQ5yQBElB9GbOaPreCyG4a8jB7p6eoC_QdkK3PxHQS9BzcAR1ZWqM4qshcJvNGdcZlisr53Up3j9erx1SvpLTSPwkrUSFmBUIgWuSLJMIwmP2bug8t8ZYQAJ9g-pJRNjacGn1-bYzO4RjPWt-idgHTxncCLnig_JzZubtr5w_3I5DKbVZSlgTzAfDPwaYj765R69n5PSdPGx4-QG2lGYeA"
+import { dbFetch } from '../lib/db'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 const leaders = [
-  { name: 'Swarnim Shamgaonkar', roleTag: 'Organizer', roleColor: 'bg-primary', image: '/core-images/organizer.jpeg', linkedin: 'https://www.linkedin.com/in/swarnim-shamgaonkar-b725472b1/' },
-  { name: 'Pratham Jadhav', roleTag: 'Co-Organizer', roleColor: 'bg-success', image: '/core-images/co-organizer.jpg', linkedin: 'https://www.linkedin.com/in/jadhavprathammm/' },
+  { id: 'leader-1', name: 'Swarnim Shamgaonkar', roleTag: 'Organizer', roleColor: 'bg-primary', category: 'Organizer', image: '/core-images/organizer.jpeg', linkedin: 'https://www.linkedin.com/in/swarnim-shamgaonkar-b725472b1/' },
+  { id: 'leader-2', name: 'Pratham Jadhav', roleTag: 'Co-Organizer', roleColor: 'bg-success', category: 'Organizer', image: '/core-images/co-organizer.jpg', linkedin: 'https://www.linkedin.com/in/jadhavprathammm/' },
 ]
 
 const domains = [
@@ -85,6 +86,23 @@ const LeaderCard = ({ person, index }) => (
 )
 
 const Core = () => {
+  const [team, setTeam] = useState([...leaders, ...domains.flatMap((domain) => [domain.lead, domain.coLead])])
+
+  useEffect(() => {
+    const loadTeam = async () => {
+      const { data } = await dbFetch('team')
+      const hasLocalAdminChanges = (data || []).some((member) => !['tm-1', 'tm-2'].includes(member.id))
+      if (data && data.length > 0 && (isSupabaseConfigured || hasLocalAdminChanges)) {
+        setTeam(data)
+      }
+    }
+
+    loadTeam()
+  }, [])
+
+  const leadership = team.filter((member) => ['Organizer', 'Co-Organizer'].includes(member.category) || /organizer/i.test(member.roleTag || ''))
+  const coreMembers = team.filter((member) => !leadership.some((leader) => leader.id === member.id))
+
   return (
     <div className="grid-bg min-h-screen border-x-0 md:border-x-4 border-black max-w-screen-2xl mx-auto overflow-hidden">
       <main className="max-w-6xl mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-24 md:pb-40">
@@ -110,19 +128,16 @@ const Core = () => {
             <div className="h-2 flex-1 bg-black hidden sm:block"></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-            {leaders.map((leader, idx) => (
-              <LeaderCard key={leader.name} person={leader} index={idx} />
+            {leadership.map((leader, idx) => (
+              <LeaderCard key={leader.id || leader.name} person={leader} index={idx} />
             ))}
           </div>
         </section>
 
         {/* Domain Sections */}
-        <div className="space-y-8 md:space-y-10">
-          {domains.map((domain, i) => (
-            <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-              <LeaderCard person={domain.lead} index={0} />
-              <LeaderCard person={domain.coLead} index={1} />
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
+          {coreMembers.map((member, idx) => (
+            <LeaderCard key={member.id || member.name} person={member} index={idx} />
           ))}
         </div>
 

@@ -26,7 +26,7 @@ const SECTION_COLORS = {
 
 const SQL_SCHEMA = `-- 1. Events Table
 create table if not exists events (
-  id text primary key default gen_random_uuid(),
+  id text primary key default gen_random_uuid()::text,
   title text not null,
   type text not null,
   date text not null,
@@ -39,7 +39,7 @@ create table if not exists events (
 
 -- 2. Resources Table
 create table if not exists resources (
-  id text primary key default gen_random_uuid(),
+  id text primary key default gen_random_uuid()::text,
   event_id text references events(id) on delete cascade,
   label text not null,
   icon text default 'slideshow',
@@ -49,7 +49,7 @@ create table if not exists resources (
 
 -- 3. Core Team Table
 create table if not exists team (
-  id text primary key default gen_random_uuid(),
+  id text primary key default gen_random_uuid()::text,
   name text not null,
   roleTag text not null,
   roleColor text default 'bg-primary',
@@ -61,7 +61,7 @@ create table if not exists team (
 
 -- 4. Sponsors Table
 create table if not exists sponsors (
-  id text primary key default gen_random_uuid(),
+  id text primary key default gen_random_uuid()::text,
   name text not null,
   tier text default 'Community Partner',
   logo text,
@@ -69,22 +69,57 @@ create table if not exists sponsors (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
+-- 5. Community Comments Table
+create table if not exists comments (
+  id text primary key default gen_random_uuid()::text,
+  name text not null,
+  "eventRef" text default 'General',
+  "eventId" text default 'General',
+  message text not null,
+  timestamp timestamp with time zone default timezone('utc'::text, now()),
+  "createdAt" timestamp with time zone default timezone('utc'::text, now()),
+  likes integer default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
 -- Enable public read, admin write policies
 alter table events enable row level security;
+drop policy if exists "Public read events" on events;
+drop policy if exists "Public insert/update/delete events" on events;
+drop policy if exists "Authenticated write events" on events;
 create policy "Public read events" on events for select using (true);
-create policy "Public insert/update/delete events" on events for all using (true);
+create policy "Authenticated write events" on events for all to authenticated using (true) with check (true);
 
 alter table resources enable row level security;
+drop policy if exists "Public read resources" on resources;
+drop policy if exists "Public insert/update/delete resources" on resources;
+drop policy if exists "Authenticated write resources" on resources;
 create policy "Public read resources" on resources for select using (true);
-create policy "Public insert/update/delete resources" on resources for all using (true);
+create policy "Authenticated write resources" on resources for all to authenticated using (true) with check (true);
 
 alter table team enable row level security;
+drop policy if exists "Public read team" on team;
+drop policy if exists "Public insert/update/delete team" on team;
+drop policy if exists "Authenticated write team" on team;
 create policy "Public read team" on team for select using (true);
-create policy "Public insert/update/delete team" on team for all using (true);
+create policy "Authenticated write team" on team for all to authenticated using (true) with check (true);
 
 alter table sponsors enable row level security;
+drop policy if exists "Public read sponsors" on sponsors;
+drop policy if exists "Public insert/update/delete sponsors" on sponsors;
+drop policy if exists "Authenticated write sponsors" on sponsors;
 create policy "Public read sponsors" on sponsors for select using (true);
-create policy "Public insert/update/delete sponsors" on sponsors for all using (true);
+create policy "Authenticated write sponsors" on sponsors for all to authenticated using (true) with check (true);
+
+alter table comments enable row level security;
+drop policy if exists "Public read comments" on comments;
+drop policy if exists "Public insert comments" on comments;
+drop policy if exists "Public update comments" on comments;
+drop policy if exists "Authenticated delete comments" on comments;
+create policy "Public read comments" on comments for select using (true);
+create policy "Public insert comments" on comments for insert with check (true);
+create policy "Public update comments" on comments for update using (true) with check (true);
+create policy "Authenticated delete comments" on comments for delete to authenticated using (true);
 `
 
 const AdminLayout = () => {
