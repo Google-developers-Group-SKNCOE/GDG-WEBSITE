@@ -350,13 +350,23 @@ export const SEEDS = {
     },
     {
       id: 'tm-6',
-      name: 'Manasvi Bhandarkar',
+      name: 'Swanand Salwe',
       roleTag: 'AI/ML Co-Lead',
       roleColor: 'bg-success',
       category: 'Co-Lead',
       image: 'https://raw.githubusercontent.com/Google-developers-Group-SKNCOE/gdg-skncoe-assets/main/team/coleads/AIML%20Colead.jpeg',
-      linkedin: 'https://www.linkedin.com/in/manasvi-bhandarkar-3a32282a7/',
+      linkedin: null,
       created_at: new Date('2025-09-01T05:00:00Z').toISOString()
+    },
+    {
+      id: 'tm-manasvi',
+      name: 'Manasvi Bhandarkar',
+      roleTag: 'AI/ML Co-Lead',
+      roleColor: 'bg-success',
+      category: 'Co-Lead',
+      image: 'https://raw.githubusercontent.com/Google-developers-Group-SKNCOE/gdg-skncoe-assets/main/team/coleads/Aiml%20Co-lead.jpg',
+      linkedin: 'https://www.linkedin.com/in/manasvi-bhandarkar-3a32282a7/',
+      created_at: new Date('2025-09-01T05:30:00Z').toISOString()
     },
     {
       id: 'tm-7',
