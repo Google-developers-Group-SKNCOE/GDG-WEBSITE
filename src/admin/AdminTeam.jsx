@@ -61,7 +61,6 @@ const AdminTeam = () => {
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState(null)
-  const [selectedCategory, setSelectedCategory] = useState('All')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -88,11 +87,6 @@ const AdminTeam = () => {
     load()
   }
 
-  const categoryOptions = ['All', ...CATEGORIES]
-  const filteredTeam = selectedCategory === 'All'
-    ? team
-    : team.filter(m => m.category === selectedCategory || (selectedCategory === 'Organizer' && m.roleTag?.toLowerCase().includes('organizer')))
-
   return (
     <div>
       <AdminHeader
@@ -107,27 +101,6 @@ const AdminTeam = () => {
         }
       />
 
-      {/* Category Filter Tabs */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {categoryOptions.map(cat => {
-          const count = cat === 'All' ? team.length : team.filter(m => m.category === cat).length
-          const isActive = selectedCategory === cat
-          return (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 text-xs font-black uppercase tracking-wider border-2 border-black transition-all cursor-pointer ${
-                isActive
-                  ? 'bg-black text-white shadow-brutal-sm'
-                  : 'bg-white text-black hover:bg-surface-dark'
-              }`}
-            >
-              {cat} ({count})
-            </button>
-          )
-        })}
-      </div>
-
       <AnimatePresence>
         {(showForm || editing) && (
           <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mb-8">
@@ -141,11 +114,11 @@ const AdminTeam = () => {
         )}
       </AnimatePresence>
 
-      {loading ? <Spinner /> : filteredTeam.length === 0 ? (
-        <EmptyState icon="person_off" text={`No team members found in "${selectedCategory}".`} />
+      {loading ? <Spinner /> : team.length === 0 ? (
+        <EmptyState icon="person_off" text="No team members yet. Add the first member!" />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredTeam.map(member => (
+          {team.map(member => (
             <motion.div
               key={member.id}
               layout
