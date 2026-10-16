@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { dbFetch, sortEventsByDate } from '../lib/db'
+import { dbFetch, dbInsert, dbUpdate, dbDelete, subscribeToTable, sortEventsByDate } from '../lib/db'
 
 // ─── Event Resources Data ─────────────────────────────────────────────────────
 const eventResources = [
@@ -246,57 +246,90 @@ const ResourceCard = ({ event, index }) => (
 
 // ─── Community Section ────────────────────────────────────────────────────────
 const CommunitySection = () => {
-  const [comments, setComments] = useState(loadComments)
+  const [comments, setComments] = useState([])
+  const [loading, setLoading] = useState(true)
   const [name, setName] = useState('')
   const [eventRef, setEventRef] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [filter, setFilter] = useState('All')
 
+  const load = useCallback(async () => {
+    const { data } = await dbFetch('comments', 'created_at', false)
+    if (data) {
+      setComments(data)
+    }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    load()
+    // 1. Live Realtime updates across devices
+    const unsubscribe = subscribeToTable('comments', () => {
+      load()
+    })
+    // 2. Fallback polling every 8s in case websockets are interrupted
+    const interval = setInterval(load, 8000)
+    return () => {
+      clearInterval(interval)
+      unsubscribe()
+    }
+  }, [load])
+
   const allFilters = ['All', ...eventResources.map((e) => e.title), 'General']
   const filteredComments =
-    filter === 'All' ? comments : comments.filter((c) => c.eventRef === filter)
+    filter === 'All' ? comments : comments.filter((c) => c.eventRef === filter || c.event_ref === filter)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!name.trim() || !message.trim()) {
       setError('Please fill in your name and message.')
       return
     }
     setError('')
+    setSubmitting(true)
+
     const newComment = {
-      id: Date.now(),
       name: name.trim(),
       eventRef: eventRef || 'General',
-      eventId: eventRef || 'General',
+      event_ref: eventRef || 'General',
       message: message.trim(),
-      timestamp: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
       likes: 0,
+      created_at: new Date().toISOString()
     }
-    const updated = [newComment, ...comments]
-    setComments(updated)
-    saveComments(updated)
+
+    const { error: insertErr } = await dbInsert('comments', newComment)
+    setSubmitting(false)
+
+    if (insertErr) {
+      setError('Could not post comment. Please try again.')
+      return
+    }
+
     setName('')
     setEventRef('')
     setMessage('')
     setSubmitted(true)
     setTimeout(() => setSubmitted(false), 3000)
+    load()
   }
 
-  const handleLike = (id) => {
-    const updated = comments.map((c) =>
-      c.id === id ? { ...c, likes: (c.likes || 0) + 1 } : c
-    )
-    setComments(updated)
-    saveComments(updated)
+  const handleLike = async (id) => {
+    const target = comments.find((c) => c.id === id)
+    if (!target) return
+    const newLikes = (target.likes || 0) + 1
+    // Optimistic UI update
+    setComments((prev) => prev.map((c) => (c.id === id ? { ...c, likes: newLikes } : c)))
+    await dbUpdate('comments', id, { likes: newLikes })
   }
 
-  const handleDelete = (id) => {
-    const updated = comments.filter((c) => c.id !== id)
-    setComments(updated)
-    saveComments(updated)
+  const handleDelete = async (id) => {
+    if (!confirm('Delete this comment?')) return
+    setComments((prev) => prev.filter((c) => c.id !== id))
+    await dbDelete('comments', id)
+    load()
   }
 
   return (
@@ -310,8 +343,7 @@ const CommunitySection = () => {
             </h2>
           </div>
           <p className="text-black font-bold text-base md:text-lg max-w-xl mt-2">
-            Share your experience, ask questions, or drop a resource link.
-            Comments are stored locally — no login required.
+            Share your experience, ask questions, or connect with peers live across the GDG community!
           </p>
         </div>
         <div className="bg-black text-white px-5 py-3 border-2 border-black font-black uppercase tracking-widest text-sm shadow-brutal-sm shrink-0">
@@ -391,9 +423,10 @@ const CommunitySection = () => {
 
               <button
                 type="submit"
-                className="w-full bg-primary text-white py-4 font-black uppercase tracking-wider text-sm border-2 border-black shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-brutal-sm active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
+                disabled={submitting}
+                className="w-full bg-primary text-white py-4 font-black uppercase tracking-wider text-sm border-2 border-black shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-brutal-sm active:translate-x-1 active:translate-y-1 active:shadow-none transition-all disabled:opacity-50 cursor-pointer"
               >
-                Post Comment
+                {submitting ? 'Posting...' : 'Post Comment'}
               </button>
             </form>
           </div>

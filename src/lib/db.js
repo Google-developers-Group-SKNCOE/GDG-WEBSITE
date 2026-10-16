@@ -780,6 +780,14 @@ export const dbFetch = async (table, order = 'created_at', ascending = false) =>
             link: r.link || r.resource_url || r.url || ''
           }))
         }
+        if (table === 'comments') {
+          activeRows = activeRows.map(r => ({
+            ...r,
+            eventRef: r.event_ref || r.eventRef || 'General',
+            timestamp: r.created_at,
+            createdAt: r.created_at
+          }))
+        }
         if (activeRows.length > 0) {
           if (table === 'events') {
             return { data: sortEventsByDate(activeRows, !ascending), error: null }
@@ -816,13 +824,13 @@ export const dbInsert = async (table, row) => {
     created_at: new Date().toISOString()
   }
 
-  // Only assign string ID if the table is NOT events or resources (both use auto-increment bigint in Supabase)
-  if (table !== 'events' && table !== 'resources') {
+  // Only assign string ID if the table is NOT events, resources, or comments (use auto-increment in Supabase)
+  if (table !== 'events' && table !== 'resources' && table !== 'comments') {
     if (!newRow.id) {
       newRow.id = `row_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
     }
   } else {
-    // If table is events or resources and row.id is a string, remove it so PostgreSQL generates the serial id
+    // If table is events, resources, or comments and row.id is a string, remove it so PostgreSQL generates the serial id
     if (typeof newRow.id === 'string' && isNaN(Number(newRow.id))) {
       delete newRow.id
     }
@@ -847,6 +855,20 @@ export const dbInsert = async (table, row) => {
           link: url,
           is_deleted: false,
           created_at: newRow.created_at
+        }
+        if (typeof newRow.id === 'number' || (typeof newRow.id === 'string' && !isNaN(Number(newRow.id)))) {
+          insertPayload.id = Number(newRow.id)
+        }
+      }
+
+      if (table === 'comments') {
+        insertPayload = {
+          name: newRow.name || 'Anonymous',
+          event_ref: newRow.event_ref || newRow.eventRef || 'General',
+          message: newRow.message || '',
+          likes: Number(newRow.likes) || 0,
+          is_deleted: false,
+          created_at: newRow.created_at || new Date().toISOString()
         }
         if (typeof newRow.id === 'number' || (typeof newRow.id === 'string' && !isNaN(Number(newRow.id)))) {
           insertPayload.id = Number(newRow.id)
@@ -912,6 +934,15 @@ export const dbUpdate = async (table, id, row) => {
           link: url,
           is_deleted: false
         }
+      }
+
+      if (table === 'comments') {
+        const updateObj = {}
+        if (updateData.likes !== undefined) updateObj.likes = Number(updateData.likes)
+        if (updateData.message !== undefined) updateObj.message = updateData.message
+        if (updateData.name !== undefined) updateObj.name = updateData.name
+        if (updateData.is_deleted !== undefined) updateObj.is_deleted = updateData.is_deleted
+        updateData = updateObj
       }
 
       const res = await supabase.from(table).update(updateData).eq('id', id).select().single()
@@ -998,4 +1029,24 @@ export const dbDelete = async (table, id) => {
   }
 
   return { error: null }
+}
+
+// ── Supabase Realtime Subscription Helper ──
+export const subscribeToTable = (table, callback) => {
+  if (!isSupabaseConfigured) return () => {}
+  try {
+    const channel = supabase
+      .channel(`realtime:${table}:${Math.random().toString(36).substring(2, 7)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
+        callback(payload)
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  } catch (e) {
+    console.warn(`Realtime subscription error for ${table}:`, e)
+    return () => {}
+  }
 }
