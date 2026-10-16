@@ -51,6 +51,27 @@ const Core = () => {
     })
   }, [])
 
+  // Categorization: Organizers & Co-Organizers upside, then all domains beneath
+  const isLeadership = (m) => {
+    const cat = (m.category || '').toLowerCase()
+    const role = (m.roleTag || '').toLowerCase()
+    return cat === 'organizer' || cat === 'co-organizer' || role.includes('organizer')
+  }
+
+  const getRank = (m) => {
+    const cat = (m.category || '').toLowerCase()
+    const role = (m.roleTag || '').toLowerCase()
+    if (cat === 'organizer' || (role.includes('organizer') && !role.includes('co-organizer') && !role.includes('co-'))) return 1
+    if (cat === 'co-organizer' || role.includes('co-organizer') || role.includes('co-organiser')) return 2
+    return 3
+  }
+
+  const leadership = team
+    .filter(isLeadership)
+    .sort((a, b) => getRank(a) - getRank(b))
+
+  const domainMembers = team.filter(m => !isLeadership(m))
+
   return (
     <div className="grid-bg min-h-screen border-x-0 md:border-x-4 border-black max-w-screen-2xl mx-auto overflow-hidden">
       <main className="max-w-6xl mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-24 md:pb-40">
@@ -69,14 +90,27 @@ const Core = () => {
           </p>
         </section>
 
-        {/* Unified Team Members Grid */}
-        <section className="mb-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-            {team.map((person, idx) => (
-              <LeaderCard key={person.id || person.name} person={person} index={idx} />
-            ))}
-          </div>
-        </section>
+        {/* Organizers & Co-Organizers (Upside) */}
+        {leadership.length > 0 && (
+          <section className="mb-8 md:mb-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
+              {leadership.map((person, idx) => (
+                <LeaderCard key={person.id || person.name} person={person} index={idx} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* All Domains & Leads (Beneath) */}
+        {domainMembers.length > 0 && (
+          <section className="mb-16">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
+              {domainMembers.map((person, idx) => (
+                <LeaderCard key={person.id || person.name} person={person} index={idx + leadership.length} />
+              ))}
+            </div>
+          </section>
+        )}
 
       </main>
     </div>
