@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { motion, AnimatePresence } from 'framer-motion'
+import { SEEDS } from '../lib/db'
+import { supabase } from '../lib/supabase'
 import AdminEvents from './AdminEvents'
 import AdminResources from './AdminResources'
 import AdminSponsors from './AdminSponsors'
@@ -28,6 +30,50 @@ const AdminLayout = () => {
   const { user, signOut, isSupabaseConfigured } = useAuth()
   const [active, setActive] = useState('events')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  const [syncMsg, setSyncMsg] = useState('')
+
+  const handleSyncToSupabase = async () => {
+    if (!isSupabaseConfigured) return
+    if (!confirm('This will upload all 24 core team members (leads & co-leads), 10 events, and all resources to your live Supabase database. Continue?')) return
+    setSyncing(true)
+    setSyncMsg('')
+    try {
+      let eventsCount = 0
+      let teamCount = 0
+      let resCount = 0
+
+      // 1. Sync Events
+      for (const ev of (SEEDS.events || [])) {
+        const { error } = await supabase.from('events').upsert(ev, { onConflict: 'id' })
+        if (!error) eventsCount++
+      }
+
+      // 2. Sync Team
+      for (const tm of (SEEDS.team || [])) {
+        const { error } = await supabase.from('team').upsert(tm, { onConflict: 'id' })
+        if (!error) teamCount++
+      }
+
+      // 3. Sync Resources
+      for (const rs of (SEEDS.resources || [])) {
+        const { error } = await supabase.from('resources').upsert(rs, { onConflict: 'id' })
+        if (!error) resCount++
+      }
+
+      // 4. Sync Sponsors
+      for (const sp of (SEEDS.sponsors || [])) {
+        await supabase.from('sponsors').upsert(sp, { onConflict: 'id' })
+      }
+
+      setSyncMsg(`Synced ${teamCount} team members, ${eventsCount} events, and ${resCount} resources!`)
+      setTimeout(() => setSyncMsg(''), 7000)
+    } catch (err) {
+      setSyncMsg('Sync error: ' + err.message)
+    } finally {
+      setSyncing(false)
+    }
+  }
 
   const ActiveComponent = {
     events:    AdminEvents,
@@ -97,7 +143,25 @@ const AdminLayout = () => {
               </button>
             ))}
 
-            <div className="pt-4 mt-auto border-t-2 border-white/10">
+            <div className="pt-4 mt-auto border-t-2 border-white/10 flex flex-col gap-2">
+              {isSupabaseConfigured && (
+                <div>
+                  <button
+                    onClick={handleSyncToSupabase}
+                    disabled={syncing}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-success/20 text-success border border-success/30 text-xs font-black uppercase hover:bg-success hover:text-white transition-all disabled:opacity-50 cursor-pointer"
+                    title="Upload all default events, core team, and resources to Supabase"
+                  >
+                    <span className="material-symbols-outlined text-sm">{syncing ? 'sync' : 'cloud_upload'}</span>
+                    {syncing ? 'Uploading...' : 'Sync Seeds to DB'}
+                  </button>
+                  {syncMsg && (
+                    <p className="text-[10px] text-success font-black mt-1.5 text-center leading-tight bg-success/10 p-1 border border-success/30">
+                      {syncMsg}
+                    </p>
+                  )}
+                </div>
+              )}
               <Link
                 to="/"
                 className="flex items-center gap-3 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white/60 hover:text-white hover:bg-white/10 transition-all"
