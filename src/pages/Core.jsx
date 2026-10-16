@@ -44,28 +44,12 @@ const LeaderCard = ({ person, index }) => (
 
 const Core = () => {
   const [team, setTeam] = useState(SEEDS.team || [])
-  const [filter, setFilter] = useState('All')
 
   useEffect(() => {
     dbFetch('team', 'created_at', true).then(({ data }) => {
       if (data && data.length > 0) setTeam(data)
     })
   }, [])
-
-  // Structured categorization
-  const organizers = team.filter(m => m.category === 'Organizer' || m.roleTag?.toLowerCase() === 'organizer')
-  const coOrganizers = team.filter(m => (m.category === 'Co-Organizer' || m.roleTag?.toLowerCase() === 'co-organizer') && !organizers.includes(m))
-  const mentors = team.filter(m => m.category === 'Mentor' || m.roleTag?.toLowerCase().includes('mentor'))
-  const leads = team.filter(m => (m.category === 'Lead' || (m.roleTag?.toLowerCase().includes('lead') && !m.roleTag?.toLowerCase().includes('co-lead'))) && !organizers.includes(m) && !coOrganizers.includes(m) && !mentors.includes(m))
-  const coLeads = team.filter(m => (m.category === 'Co-Lead' || m.roleTag?.toLowerCase().includes('co-lead')) && !organizers.includes(m) && !coOrganizers.includes(m) && !mentors.includes(m))
-
-  const FILTER_TABS = [
-    { id: 'All', label: 'All Members', count: team.length },
-    { id: 'Leadership', label: 'Organizers', count: organizers.length + coOrganizers.length },
-    ...(mentors.length > 0 ? [{ id: 'Mentors', label: 'Mentors', count: mentors.length }] : []),
-    { id: 'Leads', label: 'Leads', count: leads.length },
-    { id: 'Co-Leads', label: 'Co-Leads', count: coLeads.length },
-  ]
 
   return (
     <div className="grid-bg min-h-screen border-x-0 md:border-x-4 border-black max-w-screen-2xl mx-auto overflow-hidden">
@@ -83,92 +67,16 @@ const Core = () => {
           <p className="text-base md:text-xl text-black font-bold max-w-2xl mx-auto leading-relaxed bg-surface-dark p-4 border-2 border-black">
             The GDG SKNCOE core team is a collective of visionary developers, designers, and community leaders committed to fostering a thriving tech ecosystem.
           </p>
+        </section>
 
-          {/* Quick Filter Bar */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
-            {FILTER_TABS.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setFilter(tab.id)}
-                className={`px-3 py-1.5 text-xs font-black uppercase tracking-wider border-2 border-black transition-all cursor-pointer ${
-                  filter === tab.id
-                    ? 'bg-black text-white shadow-brutal-sm'
-                    : 'bg-white text-black hover:bg-surface-dark'
-                }`}
-              >
-                {tab.label} ({tab.count})
-              </button>
+        {/* Unified Team Members Grid */}
+        <section className="mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
+            {team.map((person, idx) => (
+              <LeaderCard key={person.id || person.name} person={person} index={idx} />
             ))}
           </div>
         </section>
-
-        {/* 1. Leadership: Organizers & Co-Organizers */}
-        {(filter === 'All' || filter === 'Leadership') && (organizers.length > 0 || coOrganizers.length > 0) && (
-          <section className="mb-16">
-            <div className="flex items-center gap-4 md:gap-6 mb-10">
-              <h2 className="font-headline text-2xl md:text-4xl font-black text-white bg-primary border-4 border-black px-4 md:px-6 py-2 shadow-brutal uppercase">
-                Leadership & Organizers
-              </h2>
-              <div className="h-2 flex-1 bg-black hidden sm:block"></div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-              {[...organizers, ...coOrganizers].map((person, idx) => (
-                <LeaderCard key={person.id || person.name} person={person} index={idx} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* 2. Mentors Section */}
-        {(filter === 'All' || filter === 'Mentors') && mentors.length > 0 && (
-          <section className="mb-16">
-            <div className="flex items-center gap-4 md:gap-6 mb-10">
-              <h2 className="font-headline text-2xl md:text-4xl font-black text-black bg-warning border-4 border-black px-4 md:px-6 py-2 shadow-brutal uppercase">
-                Mentors & Advisors
-              </h2>
-              <div className="h-2 flex-1 bg-black hidden sm:block"></div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-              {mentors.map((person, idx) => (
-                <LeaderCard key={person.id || person.name} person={person} index={idx} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* 3. Domain Leads Section */}
-        {(filter === 'All' || filter === 'Leads') && leads.length > 0 && (
-          <section className="mb-16">
-            <div className="flex items-center gap-4 md:gap-6 mb-10">
-              <h2 className="font-headline text-2xl md:text-4xl font-black text-white bg-danger border-4 border-black px-4 md:px-6 py-2 shadow-brutal uppercase">
-                Domain Leads
-              </h2>
-              <div className="h-2 flex-1 bg-black hidden sm:block"></div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-              {leads.map((person, idx) => (
-                <LeaderCard key={person.id || person.name} person={person} index={idx} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* 4. Domain Co-Leads Section */}
-        {(filter === 'All' || filter === 'Co-Leads') && coLeads.length > 0 && (
-          <section className="mb-16">
-            <div className="flex items-center gap-4 md:gap-6 mb-10">
-              <h2 className="font-headline text-2xl md:text-4xl font-black text-white bg-success border-4 border-black px-4 md:px-6 py-2 shadow-brutal uppercase">
-                Domain Co-Leads
-              </h2>
-              <div className="h-2 flex-1 bg-black hidden sm:block"></div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-              {coLeads.map((person, idx) => (
-                <LeaderCard key={person.id || person.name} person={person} index={idx} />
-              ))}
-            </div>
-          </section>
-        )}
 
       </main>
     </div>
