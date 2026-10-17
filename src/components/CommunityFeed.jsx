@@ -12,22 +12,30 @@ const LIKES_KEY = 'gdg_community_liked_ids'
 const URL_REGEX = /(?:https?:\/\/|ftp:\/\/|www\.)[^\s/$.?#].[^\s]*|\b[a-zA-Z0-9-]+\.(com|org|net|xyz|io|in|me|co|app|dev|gg|link|top|club|live|info|online|tech|ai|site|ru|cn|biz|tv|cc|to)\b|(?:t\.me|wa\.me|bit\.ly|tinyurl\.com|is\.gd|cutt\.ly|goo\.gl)\/[^\s]+|\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/i
 
 // ── XSS Sanitizer: Strips raw HTML tags & trims whitespace ──────────────────
-export const sanitizeInput = (text) => {
-  if (!text) return ''
-  return String(text)
-    .replace(/<[^>]*>?/gm, '') // Strip HTML tags
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .trim()
-}
-
-// ── Raw Safe Text (un-escapes entities purely for safe React textContent) ────
 export const cleanRawText = (text) => {
   if (!text) return ''
   return String(text).replace(/<[^>]*>?/gm, '').trim()
+}
+
+// ── Reply Message Parser ────────────────────────────────────────────────────
+// Handles threaded replies: [reply:PARENT_ID:PARENT_NAME] Actual text
+export const parseCommentMessage = (rawMessage = '') => {
+  if (!rawMessage) return { isReply: false, replyToId: null, replyToName: null, cleanText: '' }
+  const match = String(rawMessage).match(/^\[reply:([^:]+):([^\]]+)\]\s*([\s\S]*)$/)
+  if (match) {
+    return {
+      isReply: true,
+      replyToId: match[1],
+      replyToName: match[2],
+      cleanText: match[3],
+    }
+  }
+  return {
+    isReply: false,
+    replyToId: null,
+    replyToName: null,
+    cleanText: rawMessage,
+  }
 }
 
 // ── Avatar Color Palette (Modern Google GDG Colors) ─────────────────────────
@@ -68,30 +76,33 @@ export const formatRelativeTime = (timestamp) => {
 }
 
 /**
- * Open, Lightweight GDG Community Feed Component
- * - 100% open: NO authentication required
- * - Anti-bot Honeypot field
- * - 60-second client-side rate limit with ticking button countdown
- * - Strict Anti-URL and domain detection
- * - XSS protection via safe text rendering
- * - Supabase real-time listener + manual refresh
- * - Modern GDG Neo-brutalist styling
+ * Open, Lightweight GDG Community Feed Component with Threaded Replies & Smart Sorting
  */
 const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Form Fields
+  // Form Fields (Main Post)
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
   const [eventRef, setEventRef] = useState('')
-  const [honeypot, setHoneypot] = useState('') // Hidden spam trap field
+  const [honeypot, setHoneypot] = useState('')
+
+  // Inline Reply Form State
+  const [replyingToId, setReplyingToId] = useState(null)
+  const [replyName, setReplyName] = useState('')
+  const [replyMessage, setReplyMessage] = useState('')
+  const [replyHoneypot, setReplyHoneypot] = useState('')
+  const [replySubmitting, setReplySubmitting] = useState(false)
+  const [replyError, setReplyError] = useState('')
 
   // Status & Validation
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [activeFilter, setActiveFilter] = useState('All')
+  const [sortBy, setSortBy] = useState('newest') // 'newest' | 'top'
+  const [showGuidelines, setShowGuidelines] = useState(false)
 
   // Rate Limiting (60s cooldown countdown)
   const [cooldownRemaining, setCooldownRemaining] = useState(0)
@@ -119,14 +130,10 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
   }, [])
 
   useEffect(() => {
-    // Initial check
     setCooldownRemaining(calculateCooldown())
-
-    // Tick countdown every second
     const interval = setInterval(() => {
       setCooldownRemaining(calculateCooldown())
     }, 1000)
-
     return () => clearInterval(interval)
   }, [calculateCooldown])
 
@@ -145,7 +152,6 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
         console.warn('Community comments fetch warning:', fetchErr)
       }
       if (data) {
-        // Exclude soft-deleted items
         const visible = data.filter((c) => !c.is_deleted)
         setComments(visible)
       }
@@ -156,7 +162,7 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
     }
   }, [])
 
-  // Realtime subscription + fallback polling
+  // Realtime subscription + high-frequency auto-refresh poll
   useEffect(() => {
     loadComments()
 
@@ -176,24 +182,19 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
     }
   }, [loadComments])
 
-  // If component receives an activeEvent prop, pre-select it
   useEffect(() => {
     if (activeEvent) {
       setEventRef(activeEvent)
     }
   }, [activeEvent])
 
-  // ── Handle Post Submission with Security Guardrails ───────────────────────
+  // ── Handle Main Post Submission ───────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setSuccess('')
 
-    // 1. Honeypot check (Spam Bot Protection)
-    // If the invisible CSS honeypot is filled out, reject immediately
     if (honeypot && honeypot.trim().length > 0) {
-      console.warn('Spam bot intercepted by Honeypot trap.')
-      // Simulated fake success so bots do not retry with alternative tactics
       setSuccess('Message submitted successfully!')
       setName('')
       setMessage('')
@@ -202,18 +203,15 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
       return
     }
 
-    // 2. Client-Side Rate Limiting (60-second cooldown)
     const currentCooldown = calculateCooldown()
     if (currentCooldown > 0) {
       setError(`⏱️ Cooldown active: Please wait ${currentCooldown}s before posting again.`)
       return
     }
 
-    // 3. XSS Sanitization & Stripping
     const cleanName = cleanRawText(name)
     const cleanMsg = cleanRawText(message)
 
-    // 4. Character Length Validation
     if (cleanName.length < 2 || cleanName.length > 30) {
       setError('Author name must be between 2 and 30 characters.')
       return
@@ -224,13 +222,11 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
       return
     }
 
-    // 5. Anti-URL Rule (No links, domains, shorteners, or protocols)
     if (URL_REGEX.test(cleanName) || URL_REGEX.test(cleanMsg)) {
       setError('🚫 Links, URLs, and web domains are strictly blocked to prevent spam and keep the community secure.')
       return
     }
 
-    // 6. Proceed to Post
     setSubmitting(true)
     const payload = {
       name: cleanName,
@@ -250,24 +246,88 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
       return
     }
 
-    // 7. Enforce 60-Second Cooldown in LocalStorage
     try {
       const cooldownUntil = Date.now() + COOLDOWN_DURATION_SEC * 1000
       localStorage.setItem(COOLDOWN_KEY, String(cooldownUntil))
       setCooldownRemaining(COOLDOWN_DURATION_SEC)
     } catch {}
 
-    // 8. Reset Form State
     setName('')
     setMessage('')
     setSuccess('✓ Note shared live to the GDG Community!')
     setTimeout(() => setSuccess(''), 4000)
-
-    // Reload feed
     loadComments()
   }
 
-  // ── Handle Like / Reaction (1 like per person with toggle) ───────────────
+  // ── Handle Direct Reply Submission ────────────────────────────────────────
+  const handleReplySubmit = async (e, parentComment) => {
+    e.preventDefault()
+    setReplyError('')
+
+    if (replyHoneypot && replyHoneypot.trim().length > 0) {
+      setReplyingToId(null)
+      return
+    }
+
+    const currentCooldown = calculateCooldown()
+    if (currentCooldown > 0) {
+      setReplyError(`⏱️ Please wait ${currentCooldown}s before replying.`)
+      return
+    }
+
+    const cleanName = cleanRawText(replyName)
+    const cleanMsg = cleanRawText(replyMessage)
+
+    if (cleanName.length < 2 || cleanName.length > 30) {
+      setReplyError('Name must be between 2 and 30 characters.')
+      return
+    }
+
+    if (cleanMsg.length < 3 || cleanMsg.length > 300) {
+      setReplyError('Reply must be between 3 and 300 characters.')
+      return
+    }
+
+    if (URL_REGEX.test(cleanName) || URL_REGEX.test(cleanMsg)) {
+      setReplyError('🚫 Links and URLs are not permitted in replies.')
+      return
+    }
+
+    setReplySubmitting(true)
+    // Encode parent reference into comment message
+    const formattedReplyMessage = `[reply:${parentComment.id}:${parentComment.name || 'Anonymous'}] ${cleanMsg}`
+
+    const payload = {
+      name: cleanName,
+      message: formattedReplyMessage,
+      event_ref: parentComment.event_ref || parentComment.eventRef || 'General',
+      eventRef: parentComment.event_ref || parentComment.eventRef || 'General',
+      likes: 0,
+      is_deleted: false,
+      created_at: new Date().toISOString(),
+    }
+
+    const { error: insertErr } = await dbInsert('comments', payload)
+    setReplySubmitting(false)
+
+    if (insertErr) {
+      setReplyError('Could not post reply. Please try again.')
+      return
+    }
+
+    try {
+      const cooldownUntil = Date.now() + COOLDOWN_DURATION_SEC * 1000
+      localStorage.setItem(COOLDOWN_KEY, String(cooldownUntil))
+      setCooldownRemaining(COOLDOWN_DURATION_SEC)
+    } catch {}
+
+    setReplyName('')
+    setReplyMessage('')
+    setReplyingToId(null)
+    loadComments()
+  }
+
+  // ── Handle Like / Reaction (1 like per user/device with toggle) ───────────
   const handleLike = async (comment) => {
     const commentIdStr = String(comment.id)
     const isAlreadyLiked = likedIds.some((id) => String(id) === commentIdStr)
@@ -283,7 +343,6 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
       localStorage.setItem(LIKES_KEY, JSON.stringify(updatedLikedIds))
     } catch {}
 
-    // Optimistic UI update
     setComments((prev) =>
       prev.map((c) => (String(c.id) === commentIdStr ? { ...c, likes: newLikes } : c))
     )
@@ -291,7 +350,27 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
     await dbUpdate('comments', comment.id, { likes: newLikes })
   }
 
-  // ── Dynamic Filters ───────────────────────────────────────────────────────
+  // ── Thread Structuring & Grouping ─────────────────────────────────────────
+  const { topLevelPosts, repliesByParent } = useMemo(() => {
+    const repliesMap = {}
+    const topPosts = []
+
+    comments.forEach((c) => {
+      const parsed = parseCommentMessage(c.message)
+      if (parsed.isReply && parsed.replyToId) {
+        if (!repliesMap[parsed.replyToId]) {
+          repliesMap[parsed.replyToId] = []
+        }
+        repliesMap[parsed.replyToId].push({ ...c, parsedMessage: parsed })
+      } else {
+        topPosts.push({ ...c, parsedMessage: parsed })
+      }
+    })
+
+    return { topLevelPosts: topPosts, repliesByParent: repliesMap }
+  }, [comments])
+
+  // ── Filters & Sorting ─────────────────────────────────────────────────────
   const filterOptions = useMemo(() => {
     const tags = new Set(['All'])
     comments.forEach((c) => {
@@ -305,22 +384,39 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
     return Array.from(tags)
   }, [comments, eventFilterList])
 
-  const filteredComments = useMemo(() => {
-    if (activeFilter === 'All') return comments
-    return comments.filter(
-      (c) => (c.event_ref || c.eventRef || 'General') === activeFilter
-    )
-  }, [comments, activeFilter])
+  const filteredAndSortedPosts = useMemo(() => {
+    let list = activeFilter === 'All'
+      ? topLevelPosts
+      : topLevelPosts.filter(
+          (c) => (c.event_ref || c.eventRef || 'General') === activeFilter
+        )
 
-  // Character countdown calculations
+    if (sortBy === 'top') {
+      // Sort by engagement: Likes + Replies count
+      list = [...list].sort((a, b) => {
+        const scoreA = (Number(a.likes) || 0) + (repliesByParent[a.id]?.length || 0) * 2
+        const scoreB = (Number(b.likes) || 0) + (repliesByParent[b.id]?.length || 0) * 2
+        return scoreB - scoreA
+      })
+    } else {
+      // Chronological newest first
+      list = [...list].sort(
+        (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
+      )
+    }
+
+    return list
+  }, [topLevelPosts, activeFilter, sortBy, repliesByParent])
+
+  // Character countdown
   const charsLeft = 300 - message.length
   const isNearLimit = charsLeft <= 30
   const isOverLimit = charsLeft < 0
 
   return (
     <section id="community" className="mt-20 md:mt-28 scroll-mt-24">
-      {/* ── Community Banner & Live Status ── */}
-      <div className="mb-8 md:mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b-4 border-black pb-8">
+      {/* ── Community Banner ── */}
+      <div className="mb-8 md:mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b-4 border-black pb-8">
         <div>
           <div className="flex flex-wrap items-center gap-3 mb-3">
             <span className="bg-[#4285F4] text-white px-3.5 py-1 text-xs font-black uppercase tracking-widest border-2 border-black shadow-brutal-sm -rotate-1">
@@ -328,7 +424,7 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
             </span>
             <div className="flex items-center gap-2 bg-white px-3 py-1 border-2 border-black text-[11px] font-black uppercase shadow-brutal-sm">
               <span className="w-2.5 h-2.5 rounded-full bg-[#34A853] animate-pulse inline-block" />
-              <span>Live Community Feed</span>
+              <span>Live Feed</span>
             </div>
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-headline font-black text-black uppercase tracking-tight">
@@ -336,13 +432,74 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
           </h2>
         </div>
 
-        {/* Counter Badge */}
-        <div className="shrink-0">
-          <div className="bg-black text-white px-4 py-2.5 border-2 border-black font-black uppercase tracking-widest text-xs shadow-brutal-sm">
+        {/* Counter & Guidelines Toggle */}
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={() => setShowGuidelines(!showGuidelines)}
+            className="flex items-center gap-2 px-3.5 py-2 bg-white border-2 border-black font-black uppercase text-xs shadow-brutal-sm hover:bg-[#FBBC04] transition-all cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-sm">info</span>
+            <span>{showGuidelines ? 'Hide Guide' : 'Engagement Guide'}</span>
+          </button>
+          <div className="bg-black text-white px-4 py-2 border-2 border-black font-black uppercase tracking-widest text-xs shadow-brutal-sm">
             {comments.length} {comments.length === 1 ? 'Post' : 'Posts'}
           </div>
         </div>
       </div>
+
+      {/* ── Collapsible Community Engagement & Guidelines Card ── */}
+      <AnimatePresence>
+        {showGuidelines && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden mb-8"
+          >
+            <div className="bg-white border-4 border-black shadow-brutal p-6 md:p-8">
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b-2 border-black">
+                <span className="material-symbols-outlined text-[#4285F4] font-black">forum</span>
+                <h3 className="font-headline font-black text-base md:text-lg uppercase">
+                  Community Engagement &amp; Guidelines
+                </h3>
+              </div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-bold leading-relaxed text-black">
+                <div className="bg-[#4285F4]/10 border-2 border-black p-4 shadow-brutal-sm">
+                  <div className="flex items-center gap-1.5 font-black uppercase mb-1.5 text-[#4285F4]">
+                    <span className="material-symbols-outlined text-base">edit_note</span>
+                    <span>1. Post Creation</span>
+                  </div>
+                  <p>Share a note, ask a question, or discuss workshops by categorizing topics to keep resources organized.</p>
+                </div>
+
+                <div className="bg-[#34A853]/10 border-2 border-black p-4 shadow-brutal-sm">
+                  <div className="flex items-center gap-1.5 font-black uppercase mb-1.5 text-[#34A853]">
+                    <span className="material-symbols-outlined text-base">reply</span>
+                    <span>2. Direct Replies</span>
+                  </div>
+                  <p>Reply directly to existing threads to answer questions, share feedback, and build linear discussions.</p>
+                </div>
+
+                <div className="bg-[#FBBC04]/20 border-2 border-black p-4 shadow-brutal-sm">
+                  <div className="flex items-center gap-1.5 font-black uppercase mb-1.5 text-black">
+                    <span className="material-symbols-outlined text-base">thumb_up</span>
+                    <span>3. Upvoting</span>
+                  </div>
+                  <p>Upvote helpful replies and solutions to push the best insights to the top so peers find them instantly.</p>
+                </div>
+
+                <div className="bg-[#EA4335]/10 border-2 border-black p-4 shadow-brutal-sm">
+                  <div className="flex items-center gap-1.5 font-black uppercase mb-1.5 text-[#EA4335]">
+                    <span className="material-symbols-outlined text-base">security</span>
+                    <span>4. Safe Moderation</span>
+                  </div>
+                  <p>Automated anti-spam URL guardrails and team moderators protect discussions from spam and hostility.</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="grid lg:grid-cols-12 gap-8 md:gap-10 items-start">
         {/* ── Column 1: Input Post Card (5 Cols) ── */}
@@ -356,7 +513,7 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
                 </div>
                 <div>
                   <h3 className="font-headline font-black text-black text-lg md:text-xl uppercase leading-none">
-                    Leave a Message
+                    Start a Thread
                   </h3>
                   <span className="text-[10px] font-black uppercase tracking-wider text-black/50">
                     Instant &amp; Public
@@ -372,7 +529,7 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-              {/* 🛡️ HONEYPOT SPAM TRAP FIELD (Invisible to humans, catches automated bots) */}
+              {/* 🛡️ Honeypot Field */}
               <div
                 style={{
                   position: 'absolute',
@@ -462,7 +619,7 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Share your thoughts, ask a question, or give a shoutout! (No links allowed)"
+                  placeholder="Share your thoughts, ask a question, or start a discussion..."
                   rows={4}
                   maxLength={300}
                   required
@@ -473,7 +630,7 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
               {/* Anti-URL Notice */}
               <div className="flex items-start gap-2 bg-[#FBBC04]/20 border-2 border-black p-3 text-[11px] font-bold text-black leading-tight">
                 <span className="material-symbols-outlined text-[#EA4335] text-sm shrink-0">shield</span>
-                <span>Links &amp; URLs are strictly filtered out to ensure spam-free discussions.</span>
+                <span>Links &amp; URLs are filtered out to keep threads spam-free.</span>
               </div>
 
               {/* Error Alert */}
@@ -506,7 +663,7 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
                 )}
               </AnimatePresence>
 
-              {/* Submit Button with Live Rate-Limit Timer */}
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={submitting || cooldownRemaining > 0 || isOverLimit}
@@ -529,7 +686,7 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
                 ) : (
                   <>
                     <span className="material-symbols-outlined text-base">send</span>
-                    <span>Post Note</span>
+                    <span>Post Thread</span>
                   </>
                 )}
               </button>
@@ -537,26 +694,55 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
           </div>
         </div>
 
-        {/* ── Column 2: Live Feed Display (7 Cols) ── */}
+        {/* ── Column 2: Live Feed Display & Sorting (7 Cols) ── */}
         <div className="lg:col-span-7 flex flex-col gap-6">
-          {/* Filter Chips Bar */}
-          <div className="flex flex-wrap items-center gap-2 pb-2">
-            <span className="text-[10px] font-black uppercase text-black/50 tracking-wider mr-1">
-              Filter:
-            </span>
-            {filterOptions.map((filter) => (
+          {/* Controls: Filter chips + Sort toggle */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b-2 border-black/10">
+            {/* Filter Chips */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-black uppercase text-black/50 tracking-wider mr-1">
+                Filter:
+              </span>
+              {filterOptions.map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setActiveFilter(filter)}
+                  className={`px-2.5 py-1 text-[10px] md:text-xs font-black uppercase tracking-wider border-2 border-black transition-all cursor-pointer ${
+                    activeFilter === filter
+                      ? 'bg-black text-white shadow-none translate-x-0.5 translate-y-0.5'
+                      : 'bg-white text-black shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none'
+                  }`}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+
+            {/* Smart Sort (Newest vs Top/Hot) */}
+            <div className="flex items-center gap-1 bg-surface-dark border-2 border-black p-1 shadow-brutal-sm self-start sm:self-auto shrink-0">
               <button
-                key={filter}
-                onClick={() => setActiveFilter(filter)}
-                className={`px-3 py-1.5 text-[10px] md:text-xs font-black uppercase tracking-wider border-2 border-black transition-all cursor-pointer ${
-                  activeFilter === filter
-                    ? 'bg-black text-white shadow-none translate-x-0.5 translate-y-0.5'
-                    : 'bg-white text-black shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none'
+                onClick={() => setSortBy('newest')}
+                className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer ${
+                  sortBy === 'newest'
+                    ? 'bg-[#4285F4] text-white border border-black shadow-brutal-sm'
+                    : 'text-black hover:text-[#4285F4]'
                 }`}
               >
-                {filter}
+                <span className="material-symbols-outlined text-xs">schedule</span>
+                <span>Newest</span>
               </button>
-            ))}
+              <button
+                onClick={() => setSortBy('top')}
+                className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer ${
+                  sortBy === 'top'
+                    ? 'bg-[#FBBC04] text-black border border-black shadow-brutal-sm'
+                    : 'text-black hover:text-[#FBBC04]'
+                }`}
+              >
+                <span className="material-symbols-outlined text-xs">local_fire_department</span>
+                <span>Top / Hot</span>
+              </button>
+            </div>
           </div>
 
           {/* Loading Skeleton */}
@@ -567,7 +753,7 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
                 Loading community notes...
               </p>
             </div>
-          ) : filteredComments.length === 0 ? (
+          ) : filteredAndSortedPosts.length === 0 ? (
             <div className="bg-white border-4 border-black p-12 md:p-16 text-center shadow-brutal">
               <div className="w-16 h-16 bg-[#FBBC04]/20 border-2 border-black rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="material-symbols-outlined text-3xl text-black/40">forum</span>
@@ -582,89 +768,244 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-5">
               <AnimatePresence initial={false}>
-                {filteredComments.map((comment) => (
-                  <motion.div
-                    key={comment.id}
-                    layout
-                    initial={{ opacity: 0, y: 14 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.25 }}
-                    className="bg-white border-4 border-black shadow-brutal p-5 md:p-6 flex flex-col gap-3 hover:-translate-y-0.5 transition-transform"
-                  >
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        {/* Author Initial Avatar */}
-                        <div
-                          className={`w-10 h-10 border-2 border-black flex items-center justify-center font-black text-sm uppercase shadow-brutal-sm shrink-0 ${getAuthorColor(
-                            comment.name
-                          )}`}
-                        >
-                          {(comment.name || '?').charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-headline font-black text-black text-sm uppercase tracking-wide">
-                              {comment.name || 'Anonymous'}
-                            </span>
-                            {(comment.event_ref || comment.eventRef) &&
-                              (comment.event_ref || comment.eventRef) !== 'General' && (
-                                <span className="px-2 py-0.5 text-[9px] font-black uppercase bg-[#FBBC04]/30 border border-black text-black">
-                                  {comment.event_ref || comment.eventRef}
-                                </span>
-                              )}
+                {filteredAndSortedPosts.map((post) => {
+                  const isPostLiked = likedIds.some((id) => String(id) === String(post.id))
+                  const replies = repliesByParent[post.id] || []
+                  const isReplyingThis = replyingToId === post.id
+
+                  return (
+                    <motion.div
+                      key={post.id}
+                      layout
+                      initial={{ opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.25 }}
+                      className="bg-white border-4 border-black shadow-brutal p-5 md:p-6 flex flex-col gap-3"
+                    >
+                      {/* Thread Author Header */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-10 h-10 border-2 border-black flex items-center justify-center font-black text-sm uppercase shadow-brutal-sm shrink-0 ${getAuthorColor(
+                              post.name
+                            )}`}
+                          >
+                            {(post.name || '?').charAt(0).toUpperCase()}
                           </div>
-                          <span className="text-[10px] font-bold text-black/40 uppercase tracking-wider block">
-                            {formatRelativeTime(comment.created_at || comment.timestamp)}
-                          </span>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-headline font-black text-black text-sm uppercase tracking-wide">
+                                {post.name || 'Anonymous'}
+                              </span>
+                              {(post.event_ref || post.eventRef) &&
+                                (post.event_ref || post.eventRef) !== 'General' && (
+                                  <span className="px-2 py-0.5 text-[9px] font-black uppercase bg-[#FBBC04]/30 border border-black text-black">
+                                    {post.event_ref || post.eventRef}
+                                  </span>
+                                )}
+                            </div>
+                            <span className="text-[10px] font-bold text-black/40 uppercase tracking-wider block">
+                              {formatRelativeTime(post.created_at || post.timestamp)}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Safe Text Message (XSS immune React textContent node) */}
-                    <p className="text-black text-sm font-bold leading-relaxed border-l-4 border-black pl-3.5 my-1 whitespace-pre-wrap break-words">
-                      {comment.message}
-                    </p>
+                      {/* Main Message Body */}
+                      <p className="text-black text-sm font-bold leading-relaxed border-l-4 border-black pl-3.5 my-1 whitespace-pre-wrap break-words">
+                        {post.parsedMessage?.cleanText || post.message}
+                      </p>
 
-                    {/* Footer Actions */}
-                    <div className="flex items-center justify-between pt-2 border-t-2 border-black/10">
-                      {(() => {
-                        const isLiked = likedIds.some((id) => String(id) === String(comment.id))
-                        return (
+                      {/* Actions Bar: Like + Direct Reply Toggle */}
+                      <div className="flex items-center justify-between pt-2 border-t-2 border-black/10">
+                        <div className="flex items-center gap-2">
+                          {/* Upvote / Like Button (1 like limit with toggle) */}
                           <button
-                            onClick={() => handleLike(comment)}
-                            title={isLiked ? 'Unlike this note' : 'Like this note (1 like per person)'}
+                            onClick={() => handleLike(post)}
+                            title={isPostLiked ? 'Unlike note' : 'Upvote note (1 per person)'}
                             className={`flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase border-2 border-black transition-all cursor-pointer ${
-                              isLiked
+                              isPostLiked
                                 ? 'bg-[#4285F4] text-white shadow-none translate-x-0.5 translate-y-0.5'
                                 : 'bg-white text-black shadow-brutal-sm hover:bg-[#FBBC04] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none'
                             }`}
                           >
                             <span
                               className={`material-symbols-outlined text-sm ${
-                                isLiked ? 'text-white' : 'text-[#4285F4]'
+                                isPostLiked ? 'text-white' : 'text-[#4285F4]'
                               }`}
-                              style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}
+                              style={{ fontVariationSettings: isPostLiked ? "'FILL' 1" : "'FILL' 0" }}
                             >
                               thumb_up
                             </span>
-                            <span>{comment.likes || 0}</span>
-                            {isLiked && (
+                            <span>{post.likes || 0}</span>
+                            {isPostLiked && (
                               <span className="text-[10px] font-bold uppercase ml-0.5 opacity-90">• Liked</span>
                             )}
                           </button>
-                        )
-                      })()}
 
-                      <span className="text-[10px] font-bold text-black/30 uppercase tracking-widest">
-                        GDG Community Note
-                      </span>
-                    </div>
-                  </motion.div>
-                ))}
+                          {/* Reply Button */}
+                          <button
+                            onClick={() => {
+                              setReplyingToId(isReplyingThis ? null : post.id)
+                              setReplyError('')
+                            }}
+                            className={`flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase border-2 border-black transition-all cursor-pointer ${
+                              isReplyingThis
+                                ? 'bg-black text-white'
+                                : 'bg-white text-black shadow-brutal-sm hover:bg-surface-dark'
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-sm">reply</span>
+                            <span>{replies.length > 0 ? `Replies (${replies.length})` : 'Reply'}</span>
+                          </button>
+                        </div>
+
+                        <span className="text-[10px] font-bold text-black/30 uppercase tracking-widest hidden sm:inline">
+                          GDG Thread
+                        </span>
+                      </div>
+
+                      {/* ── Inline Direct Reply Form ── */}
+                      <AnimatePresence>
+                        {isReplyingThis && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden mt-3 pt-3 border-t-2 border-dashed border-black/20"
+                          >
+                            <form
+                              onSubmit={(e) => handleReplySubmit(e, post)}
+                              className="bg-surface-dark border-2 border-black p-4 flex flex-col gap-3 shadow-brutal-sm"
+                            >
+                              <div className="flex items-center justify-between text-xs font-black uppercase">
+                                <span className="flex items-center gap-1 text-[#4285F4]">
+                                  <span className="material-symbols-outlined text-sm">reply</span>
+                                  Replying to @{post.name || 'Anonymous'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setReplyingToId(null)}
+                                  className="text-black/40 hover:text-black font-bold uppercase text-[10px]"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+
+                              {/* Invisible Honeypot */}
+                              <div style={{ position: 'absolute', opacity: 0, height: 0, width: 0 }} tabIndex={-1}>
+                                <input
+                                  type="text"
+                                  value={replyHoneypot}
+                                  onChange={(e) => setReplyHoneypot(e.target.value)}
+                                  tabIndex={-1}
+                                  autoComplete="off"
+                                />
+                              </div>
+
+                              <input
+                                type="text"
+                                value={replyName}
+                                onChange={(e) => setReplyName(e.target.value)}
+                                placeholder="Your Name or Alias"
+                                maxLength={30}
+                                required
+                                className="border-2 border-black px-3 py-1.5 text-xs font-bold bg-white focus:outline-none focus:border-[#4285F4]"
+                              />
+
+                              <textarea
+                                value={replyMessage}
+                                onChange={(e) => setReplyMessage(e.target.value)}
+                                placeholder={`Write your answer or thoughts to ${post.name || 'this note'} (no URLs)...`}
+                                rows={2}
+                                maxLength={300}
+                                required
+                                className="border-2 border-black px-3 py-2 text-xs font-bold bg-white focus:outline-none focus:border-[#4285F4] resize-none"
+                              />
+
+                              {replyError && (
+                                <div className="text-[11px] font-black uppercase text-[#EA4335]">
+                                  {replyError}
+                                </div>
+                              )}
+
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold text-black/50">
+                                  {300 - replyMessage.length} chars left
+                                </span>
+                                <button
+                                  type="submit"
+                                  disabled={replySubmitting}
+                                  className="px-4 py-1.5 bg-[#34A853] text-white font-black uppercase text-xs border-2 border-black shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 cursor-pointer disabled:opacity-50"
+                                >
+                                  {replySubmitting ? 'Posting...' : 'Post Reply'}
+                                </button>
+                              </div>
+                            </form>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* ── Threaded Direct Replies List ── */}
+                      {replies.length > 0 && (
+                        <div className="mt-2 flex flex-col gap-2.5 pl-3 md:pl-6 border-l-4 border-[#34A853]/60">
+                          {replies.map((reply) => {
+                            const isReplyLiked = likedIds.some((id) => String(id) === String(reply.id))
+                            return (
+                              <div
+                                key={reply.id}
+                                className="bg-surface-dark/40 border-2 border-black/15 p-3.5 flex flex-col gap-2"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className={`w-7 h-7 border border-black flex items-center justify-center font-black text-xs uppercase shadow-brutal-sm shrink-0 ${getAuthorColor(
+                                        reply.name
+                                      )}`}
+                                    >
+                                      {(reply.name || '?').charAt(0).toUpperCase()}
+                                    </div>
+                                    <span className="font-headline font-black text-xs uppercase">
+                                      {reply.name || 'Anonymous'}
+                                    </span>
+                                    <span className="text-[9px] font-bold text-black/40">
+                                      {formatRelativeTime(reply.created_at)}
+                                    </span>
+                                  </div>
+
+                                  {/* Like Reply Button */}
+                                  <button
+                                    onClick={() => handleLike(reply)}
+                                    className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase border border-black cursor-pointer ${
+                                      isReplyLiked
+                                        ? 'bg-[#4285F4] text-white'
+                                        : 'bg-white text-black hover:bg-[#FBBC04]'
+                                    }`}
+                                  >
+                                    <span
+                                      className="material-symbols-outlined text-xs"
+                                      style={{ fontVariationSettings: isReplyLiked ? "'FILL' 1" : "'FILL' 0" }}
+                                    >
+                                      thumb_up
+                                    </span>
+                                    <span>{reply.likes || 0}</span>
+                                  </button>
+                                </div>
+
+                                <p className="text-black text-xs font-bold leading-relaxed whitespace-pre-wrap pl-2 border-l-2 border-[#4285F4]/40">
+                                  {reply.parsedMessage?.cleanText || reply.message}
+                                </p>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </motion.div>
+                  )
+                })}
               </AnimatePresence>
             </div>
           )}

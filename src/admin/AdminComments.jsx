@@ -327,6 +327,19 @@ const AdminComments = () => {
                         </span>
                       )}
 
+                      {(() => {
+                        const replyMatch = String(c.message || '').match(/^\[reply:([^:]+):([^\]]+)\]\s*([\s\S]*)$/)
+                        if (replyMatch) {
+                          return (
+                            <span className="px-2 py-0.5 text-[9px] font-black uppercase bg-success text-white border border-black flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[11px]">reply</span>
+                              Replying to @{replyMatch[2]}
+                            </span>
+                          )
+                        }
+                        return null
+                      })()}
+
                       <span className="text-[10px] font-bold text-black/40 ml-auto md:ml-0">
                         {formatAdminDate(timestamp)}{' '}
                         {formatAdminRelative(timestamp) && (
@@ -337,7 +350,10 @@ const AdminComments = () => {
 
                     {/* Message Body */}
                     <p className="text-black text-sm font-bold leading-relaxed whitespace-pre-wrap break-words bg-surface-dark/40 p-3 border-2 border-black/10">
-                      {c.message}
+                      {(() => {
+                        const replyMatch = String(c.message || '').match(/^\[reply:([^:]+):([^\]]+)\]\s*([\s\S]*)$/)
+                        return replyMatch ? replyMatch[3] : c.message
+                      })()}
                     </p>
 
                     <div className="mt-2.5 flex items-center gap-3 text-xs font-black text-black/60">
