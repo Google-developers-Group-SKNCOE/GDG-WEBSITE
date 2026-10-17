@@ -5,6 +5,7 @@ import { dbFetch, dbInsert, dbUpdate, subscribeToTable } from '../lib/db'
 // ── Rate Limiting Storage Key (60-second cooldown) ──────────────────────────
 const COOLDOWN_KEY = 'gdg_community_cooldown_until'
 const COOLDOWN_DURATION_SEC = 60
+const LIKES_KEY = 'gdg_community_liked_ids'
 
 // ── Anti-URL & Link Detection Pattern ───────────────────────────────────────
 // Detects protocols, standard TLDs, URL shorteners, messaging handles, and IP addresses
@@ -96,6 +97,16 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
 
   // Rate Limiting (60s cooldown countdown)
   const [cooldownRemaining, setCooldownRemaining] = useState(0)
+
+  // Track liked comments per user/device (1 like per person limit)
+  const [likedIds, setLikedIds] = useState(() => {
+    try {
+      const raw = localStorage.getItem(LIKES_KEY)
+      return raw ? JSON.parse(raw) : []
+    } catch {
+      return []
+    }
+  })
 
   // ── Cooldown Timer Setup ──────────────────────────────────────────────────
   const calculateCooldown = useCallback(() => {
@@ -263,14 +274,25 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
     loadComments()
   }
 
-  // ── Handle Like / Reaction ────────────────────────────────────────────────
+  // ── Handle Like / Reaction (1 like per person with toggle) ───────────────
   const handleLike = async (comment) => {
-    const currentLikes = comment.likes || 0
-    const newLikes = currentLikes + 1
+    const commentIdStr = String(comment.id)
+    const isAlreadyLiked = likedIds.some((id) => String(id) === commentIdStr)
+    const currentLikes = Number(comment.likes) || 0
+    const newLikes = isAlreadyLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1
+
+    const updatedLikedIds = isAlreadyLiked
+      ? likedIds.filter((id) => String(id) !== commentIdStr)
+      : [...likedIds, comment.id]
+
+    setLikedIds(updatedLikedIds)
+    try {
+      localStorage.setItem(LIKES_KEY, JSON.stringify(updatedLikedIds))
+    } catch {}
 
     // Optimistic UI update
     setComments((prev) =>
-      prev.map((c) => (c.id === comment.id ? { ...c, likes: newLikes } : c))
+      prev.map((c) => (String(c.id) === commentIdStr ? { ...c, likes: newLikes } : c))
     )
 
     await dbUpdate('comments', comment.id, { likes: newLikes })
@@ -630,15 +652,33 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
 
                     {/* Footer Actions */}
                     <div className="flex items-center justify-between pt-2 border-t-2 border-black/10">
-                      <button
-                        onClick={() => handleLike(comment)}
-                        className="flex items-center gap-1.5 px-3 py-1 bg-white border-2 border-black text-xs font-black uppercase shadow-brutal-sm hover:bg-[#FBBC04] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-sm text-[#4285F4]">
-                          thumb_up
-                        </span>
-                        <span>{comment.likes || 0}</span>
-                      </button>
+                      {(() => {
+                        const isLiked = likedIds.some((id) => String(id) === String(comment.id))
+                        return (
+                          <button
+                            onClick={() => handleLike(comment)}
+                            title={isLiked ? 'Unlike this note' : 'Like this note (1 like per person)'}
+                            className={`flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase border-2 border-black transition-all cursor-pointer ${
+                              isLiked
+                                ? 'bg-[#4285F4] text-white shadow-none translate-x-0.5 translate-y-0.5'
+                                : 'bg-white text-black shadow-brutal-sm hover:bg-[#FBBC04] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none'
+                            }`}
+                          >
+                            <span
+                              className={`material-symbols-outlined text-sm ${
+                                isLiked ? 'text-white' : 'text-[#4285F4]'
+                              }`}
+                              style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}
+                            >
+                              thumb_up
+                            </span>
+                            <span>{comment.likes || 0}</span>
+                            {isLiked && (
+                              <span className="text-[10px] font-bold uppercase ml-0.5 opacity-90">• Liked</span>
+                            )}
+                          </button>
+                        )
+                      })()}
 
                       <span className="text-[10px] font-bold text-black/30 uppercase tracking-widest">
                         GDG Community Note

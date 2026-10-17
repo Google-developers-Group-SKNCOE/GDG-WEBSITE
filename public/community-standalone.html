@@ -318,8 +318,54 @@
         msgEl.className = 'text-black text-sm font-bold leading-relaxed border-l-4 border-black pl-3 my-1 whitespace-pre-wrap';
         msgEl.textContent = comment.message; // Safe textContent (prevents XSS)
 
+        // Actions: 1 Like per Person limit
+        let likedIds = [];
+        try { likedIds = JSON.parse(localStorage.getItem('gdg_community_liked_ids') || '[]'); } catch {}
+        const isLiked = likedIds.some(id => String(id) === String(comment.id));
+
+        const footer = document.createElement('div');
+        footer.className = 'flex items-center justify-between pt-2 border-t-2 border-black/10';
+
+        const likeBtn = document.createElement('button');
+        likeBtn.className = `flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase border-2 border-black transition-all cursor-pointer ${
+          isLiked 
+            ? 'bg-gdgBlue text-white shadow-none translate-x-0.5 translate-y-0.5' 
+            : 'bg-white text-black shadow-brutal-sm hover:bg-gdgYellow'
+        }`;
+        likeBtn.title = isLiked ? 'Unlike note' : 'Like note (1 per person)';
+        likeBtn.innerHTML = `
+          <span class="material-symbols-outlined text-sm ${isLiked ? 'text-white' : 'text-gdgBlue'}">thumb_up</span>
+          <span>${comment.likes || 0}</span>
+          ${isLiked ? '<span class="text-[10px] ml-1">• Liked</span>' : ''}
+        `;
+
+        likeBtn.addEventListener('click', () => {
+          let currentLiked = [];
+          try { currentLiked = JSON.parse(localStorage.getItem('gdg_community_liked_ids') || '[]'); } catch {}
+          const already = currentLiked.some(id => String(id) === String(comment.id));
+          const updated = already 
+            ? currentLiked.filter(id => String(id) !== String(comment.id))
+            : [...currentLiked, comment.id];
+          localStorage.setItem('gdg_community_liked_ids', JSON.stringify(updated));
+
+          comment.likes = already ? Math.max(0, (comment.likes || 1) - 1) : (comment.likes || 0) + 1;
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const list = JSON.parse(raw).map(c => String(c.id) === String(comment.id) ? { ...c, likes: comment.likes } : c);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+          }
+          loadComments();
+        });
+
+        footer.appendChild(likeBtn);
+        const tag = document.createElement('span');
+        tag.className = 'text-[10px] font-bold text-black/30 uppercase tracking-widest';
+        tag.textContent = 'GDG Note';
+        footer.appendChild(tag);
+
         card.appendChild(header);
         card.appendChild(msgEl);
+        card.appendChild(footer);
         feedList.appendChild(card);
       });
     }
