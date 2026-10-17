@@ -96,12 +96,39 @@ create policy "Auth insert sponsors"       on public.sponsors for insert with ch
 create policy "Auth update sponsors"       on public.sponsors for update using (auth.role() = 'authenticated');
 create policy "Auth delete sponsors"       on public.sponsors for delete using (auth.role() = 'authenticated');
 
--- Comments (public can read, submit, and like; auth can delete)
+-- Comments (public can read and submit with strict backend validations; only auth admin can delete)
 alter table public.comments enable row level security;
-create policy "Public read comments"         on public.comments for select using (true);
-create policy "Public submit comments"       on public.comments for insert with check (true);
-create policy "Public update comments likes" on public.comments for update using (true);
-create policy "Auth delete comments"         on public.comments for delete using (auth.role() = 'authenticated');
+
+drop policy if exists "Public read comments" on public.comments;
+create policy "Public read comments"         
+  on public.comments for select 
+  using (is_deleted = false or is_deleted is null);
+
+drop policy if exists "Public submit comments" on public.comments;
+create policy "Public submit comments"       
+  on public.comments for insert 
+  with check (
+    char_length(trim(name)) >= 2 AND 
+    char_length(trim(name)) <= 30 AND 
+    char_length(trim(message)) >= 5 AND 
+    char_length(trim(message)) <= 300
+  );
+
+drop policy if exists "Public update comments likes" on public.comments;
+create policy "Public update comments likes" 
+  on public.comments for update 
+  using (true)
+  with check (true);
+
+drop policy if exists "Auth delete comments" on public.comments;
+create policy "Auth delete comments"         
+  on public.comments for delete 
+  using (auth.role() = 'authenticated');
+
+drop policy if exists "Auth manage comments" on public.comments;
+create policy "Auth manage comments"
+  on public.comments for all
+  using (auth.role() = 'authenticated');
 
 -- ==============================================================================
 -- 7. Seed Initial Events (auto-generates bigint id)

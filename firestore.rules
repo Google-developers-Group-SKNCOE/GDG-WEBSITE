@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Community Comments Collection (Open Public Feed with Strict Backend Validation)
+    match /community_comments/{commentId} {
+      
+      // 1. PUBLIC READ: Anyone can read comments
+      allow read: if true;
+      
+      // 2. PUBLIC CREATE: Anonymous/public users can create comments ONLY if strictly validated
+      allow create: if 
+        // Validate name field
+        request.resource.data.name is string &&
+        request.resource.data.name.size() >= 2 &&
+        request.resource.data.name.size() <= 30 &&
+        
+        // Validate message field
+        request.resource.data.message is string &&
+        request.resource.data.message.size() >= 5 &&
+        request.resource.data.message.size() <= 300 &&
+        
+        // Validate timestamp field matches server time
+        request.resource.data.createdAt == request.time &&
+        
+        // Ensure no illegal or unexpected fields exist
+        request.resource.data.keys().hasOnly(['name', 'message', 'createdAt', 'eventRef', 'likes']);
+      
+      // 3. NO CLIENT-SIDE UPDATES OR DELETIONS: 
+      // Public cannot alter, tamper with, or delete existing posts
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
