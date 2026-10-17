@@ -80,8 +80,6 @@ export const formatRelativeTime = (timestamp) => {
 const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [lastRefreshed, setLastRefreshed] = useState(Date.now())
 
   // Form Fields
   const [name, setName] = useState('')
@@ -140,8 +138,7 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
   }, [])
 
   // ── Fetch Comments from Database ──────────────────────────────────────────
-  const loadComments = useCallback(async (isManual = false) => {
-    if (isManual) setIsRefreshing(true)
+  const loadComments = useCallback(async () => {
     try {
       const { data, error: fetchErr } = await dbFetch('comments', 'created_at', false)
       if (fetchErr) {
@@ -151,15 +148,11 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
         // Exclude soft-deleted items
         const visible = data.filter((c) => !c.is_deleted)
         setComments(visible)
-        setLastRefreshed(Date.now())
       }
     } catch (err) {
       console.error('Failed to load comments:', err)
     } finally {
       setLoading(false)
-      if (isManual) {
-        setTimeout(() => setIsRefreshing(false), 500)
-      }
     }
   }, [])
 
@@ -172,10 +165,10 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
       loadComments()
     })
 
-    // 2. Fallback polling every 12 seconds
+    // 2. High-frequency automatic refresh poll (every 5 seconds)
     const pollInterval = setInterval(() => {
       loadComments()
-    }, 12000)
+    }, 5000)
 
     return () => {
       clearInterval(pollInterval)
@@ -341,24 +334,10 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-headline font-black text-black uppercase tracking-tight">
             Community <span className="text-[#4285F4]">Notes</span> &amp; Feed
           </h2>
-          <p className="text-black font-bold text-sm md:text-base max-w-2xl mt-2 leading-relaxed">
-            No account required. Connect with GDG SKNCOE peers, discuss workshops, share insights, or ask questions instantly.
-          </p>
         </div>
 
-        {/* Counter & Refresh Button */}
-        <div className="flex items-center gap-3 shrink-0">
-          <button
-            onClick={() => loadComments(true)}
-            disabled={isRefreshing}
-            title="Refresh community feed"
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-white border-2 border-black font-black uppercase text-xs shadow-brutal-sm hover:bg-black hover:text-white transition-all disabled:opacity-50 cursor-pointer"
-          >
-            <span className={`material-symbols-outlined text-sm ${isRefreshing ? 'animate-spin' : ''}`}>
-              refresh
-            </span>
-            <span className="hidden sm:inline">{isRefreshing ? 'Updating...' : 'Refresh'}</span>
-          </button>
+        {/* Counter Badge */}
+        <div className="shrink-0">
           <div className="bg-black text-white px-4 py-2.5 border-2 border-black font-black uppercase tracking-widest text-xs shadow-brutal-sm">
             {comments.length} {comments.length === 1 ? 'Post' : 'Posts'}
           </div>

@@ -59,16 +59,9 @@
         <h1 class="text-3xl md:text-5xl font-black uppercase tracking-tight">
           Community <span class="bg-gdgBlue text-white px-2 border-2 border-black -rotate-1 inline-block shadow-brutal-sm">Feed</span>
         </h1>
-        <p class="text-sm md:text-base font-bold text-black/70 mt-2 max-w-xl">
-          Open discussions, workshop thoughts, and peer questions. No login required.
-        </p>
       </div>
 
-      <div class="flex items-center gap-3 shrink-0">
-        <button id="refreshBtn" class="flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-black font-black uppercase text-xs shadow-brutal-sm hover:bg-black hover:text-white transition-all cursor-pointer">
-          <span class="material-symbols-outlined text-sm">refresh</span>
-          <span>Refresh</span>
-        </button>
+      <div class="shrink-0">
         <div id="postCountBadge" class="bg-black text-white px-4 py-2.5 border-2 border-black font-black uppercase text-xs shadow-brutal-sm">
           0 Posts
         </div>
@@ -449,7 +442,8 @@
       errorAlert.classList.remove('hidden');
     }
 
-    refreshBtn.addEventListener('click', loadComments);
+    // Automatic refresh every 5 seconds
+    setInterval(loadComments, 5000);
 
     // Initial load
     updateCooldownUI();
