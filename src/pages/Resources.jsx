@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { dbFetch, dbInsert, dbUpdate } from '../lib/db'
+import { dbFetch, dbInsert, dbUpdate, dbDelete, subscribeToTable, sortEventsByDate } from '../lib/db'
 
 // ─── Event Resources Data ─────────────────────────────────────────────────────
 const eventResources = [
@@ -232,25 +232,40 @@ const ResourceCard = ({ event, index }) => (
 // ─── Community Section ────────────────────────────────────────────────────────
 const CommunitySection = () => {
   const [comments, setComments] = useState([])
+  const [loading, setLoading] = useState(true)
   const [name, setName] = useState('')
   const [eventRef, setEventRef] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [filter, setFilter] = useState('All')
 
-  const loadComments = async () => {
-    const { data } = await dbFetch('comments')
-    setComments(data || [])
-  }
+  const load = useCallback(async () => {
+    const { data } = await dbFetch('comments', 'created_at', false)
+    if (data) {
+      setComments(data)
+    }
+    setLoading(false)
+  }, [])
 
   useEffect(() => {
-    loadComments()
-  }, [])
+    load()
+    // 1. Live Realtime updates across devices
+    const unsubscribe = subscribeToTable('comments', () => {
+      load()
+    })
+    // 2. Fallback polling every 8s in case websockets are interrupted
+    const interval = setInterval(load, 8000)
+    return () => {
+      clearInterval(interval)
+      unsubscribe()
+    }
+  }, [load])
 
   const allFilters = ['All', ...eventResources.map((e) => e.title), 'General']
   const filteredComments =
-    filter === 'All' ? comments : comments.filter((c) => c.eventRef === filter)
+    filter === 'All' ? comments : comments.filter((c) => c.eventRef === filter || c.event_ref === filter)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -259,31 +274,47 @@ const CommunitySection = () => {
       return
     }
     setError('')
+    setSubmitting(true)
+
     const newComment = {
-      id: Date.now(),
       name: name.trim(),
       eventRef: eventRef || 'General',
-      eventId: eventRef || 'General',
+      event_ref: eventRef || 'General',
       message: message.trim(),
-      timestamp: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
       likes: 0,
+      created_at: new Date().toISOString()
     }
-    const { data } = await dbInsert('comments', newComment)
-    setComments([data || newComment, ...comments])
+
+    const { error: insertErr } = await dbInsert('comments', newComment)
+    setSubmitting(false)
+
+    if (insertErr) {
+      setError('Could not post comment. Please try again.')
+      return
+    }
+
     setName('')
     setEventRef('')
     setMessage('')
     setSubmitted(true)
     setTimeout(() => setSubmitted(false), 3000)
+    load()
   }
 
   const handleLike = async (id) => {
     const target = comments.find((c) => c.id === id)
     if (!target) return
-    const likes = (target.likes || 0) + 1
-    await dbUpdate('comments', id, { likes })
-    setComments(comments.map((c) => c.id === id ? { ...c, likes } : c))
+    const newLikes = (target.likes || 0) + 1
+    // Optimistic UI update
+    setComments((prev) => prev.map((c) => (c.id === id ? { ...c, likes: newLikes } : c)))
+    await dbUpdate('comments', id, { likes: newLikes })
+  }
+
+  const handleDelete = async (id) => {
+    if (!confirm('Delete this comment?')) return
+    setComments((prev) => prev.filter((c) => c.id !== id))
+    await dbDelete('comments', id)
+    load()
   }
 
   return (
@@ -297,8 +328,7 @@ const CommunitySection = () => {
             </h2>
           </div>
           <p className="text-black font-bold text-base md:text-lg max-w-xl mt-2">
-            Share your experience, ask questions, or drop a resource link.
-            Comments are stored locally — no login required.
+            Share your experience, ask questions, or connect with peers live across the GDG community!
           </p>
         </div>
         <div className="bg-black text-white px-5 py-3 border-2 border-black font-black uppercase tracking-widest text-sm shadow-brutal-sm shrink-0">
@@ -378,9 +408,10 @@ const CommunitySection = () => {
 
               <button
                 type="submit"
-                className="w-full bg-primary text-white py-4 font-black uppercase tracking-wider text-sm border-2 border-black shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-brutal-sm active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
+                disabled={submitting}
+                className="w-full bg-primary text-white py-4 font-black uppercase tracking-wider text-sm border-2 border-black shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-brutal-sm active:translate-x-1 active:translate-y-1 active:shadow-none transition-all disabled:opacity-50 cursor-pointer"
               >
-                Post Comment
+                {submitting ? 'Posting...' : 'Post Comment'}
               </button>
             </form>
           </div>
@@ -466,58 +497,72 @@ const CommunitySection = () => {
 
 // ─── Main Resources Page ──────────────────────────────────────────────────────
 const Resources = () => {
-  const [allEvents, setAllEvents] = useState(eventResources)
+  const [allEvents, setAllEvents] = useState(() => sortEventsByDate(eventResources, true))
   const [search, setSearch] = useState('')
   const [activeType, setActiveType] = useState('All')
 
   useEffect(() => {
     const fetchDb = async () => {
       const [{ data: dbEvents }, { data: dbRes }] = await Promise.all([
-        dbFetch('events'),
-        dbFetch('resources')
+        dbFetch('events', 'date', false),
+        dbFetch('resources', 'created_at', false)
       ])
 
-      let merged = [...eventResources]
-
+      let baseEvents = []
       if (dbEvents && dbEvents.length > 0) {
-        dbEvents.forEach(dbEv => {
-          const idx = merged.findIndex(e => e.id === dbEv.id || e.title === dbEv.title)
-          if (idx !== -1) {
-            merged[idx] = { ...merged[idx], ...dbEv }
-          } else {
-            merged.unshift({
-              id: dbEv.id,
-              title: dbEv.title,
-              type: dbEv.type || 'Workshop',
-              date: dbEv.date,
-              color: dbEv.color || 'bg-primary',
-              icon: 'event',
-              description: dbEv.description || '',
-              tags: dbEv.tags || [],
-              image: dbEv.image,
-              resources: []
-            })
+        baseEvents = [...dbEvents]
+        // If eventResources has any events not yet in dbEvents, append them as fallback
+        eventResources.forEach(hardcodedEv => {
+          if (!baseEvents.some(e => e.id === hardcodedEv.id || e.title === hardcodedEv.title)) {
+            baseEvents.push(hardcodedEv)
           }
         })
+      } else {
+        baseEvents = [...eventResources]
       }
 
-      if (dbRes && dbRes.length > 0) {
-        dbRes.forEach(r => {
-          const ev = merged.find(e => e.id === r.event_id || e.title === r.event_id)
-          if (ev) {
-            if (!ev.resources) ev.resources = []
-            if (!ev.resources.some(existing => existing.label === r.label && existing.url === r.url)) {
-              ev.resources.push({
-                label: r.label,
-                icon: r.icon || 'slideshow',
-                url: r.url
-              })
-            }
-          }
-        })
+      const resList = dbRes || []
+      const hasDbResources = resList.length > 0
+
+      const isMatch = (rEv, ev) => {
+        if (!rEv || !ev) return false
+        const rStr = String(rEv).trim().toLowerCase()
+        const evId = String(ev.id || '').trim().toLowerCase()
+        const evTitle = String(ev.title || '').trim().toLowerCase()
+        const evSlug = evTitle.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+        const rSlug = rStr.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
+        return (
+          rStr === evId ||
+          rStr === evTitle ||
+          rSlug === evSlug ||
+          evTitle.includes(rStr) ||
+          rStr.includes(evTitle)
+        )
       }
 
-      setAllEvents([...merged])
+      const mapped = baseEvents.map(ev => {
+        // Collect resources from DB matching this event (by ID, title, or slug)
+        const dbMatched = resList
+          .filter(r => isMatch(r.event_id || r.related_event, ev))
+          .map(r => ({
+            label: r.label || r.resource_label || r.title,
+            icon: r.icon || r.icon_type || 'slideshow',
+            url: r.url || r.resource_url || r.link
+          }))
+
+        // If this specific event has custom resources in DB, use them!
+        // Otherwise fallback to its default/seed resources so users always see the resource buttons!
+        const finalResources = dbMatched.length > 0 ? dbMatched : (ev.resources || [])
+
+        return {
+          ...ev,
+          icon: ev.icon || 'event',
+          resources: finalResources
+        }
+      })
+
+      setAllEvents(sortEventsByDate(mapped, true))
     }
     fetchDb()
   }, [])

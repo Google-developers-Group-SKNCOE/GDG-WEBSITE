@@ -4,6 +4,36 @@ import { supabase, isSupabaseConfigured } from './supabase'
 const AuthContext = createContext({})
 
 const LOCAL_ADMIN_KEY = 'gdg_local_admin_session'
+const RATE_LIMIT_KEY = 'gdg_login_attempts'
+const MAX_ATTEMPTS = 5
+const LOCKOUT_MS = 15 * 60 * 1000   // 15 minutes lockout after too many attempts
+const SESSION_TTL_MS = 8 * 60 * 60 * 1000 // 8 hours session expiry
+
+const getRateLimit = () => {
+  try {
+    const raw = localStorage.getItem(RATE_LIMIT_KEY)
+    return raw ? JSON.parse(raw) : { count: 0, since: Date.now() }
+  } catch { return { count: 0, since: Date.now() } }
+}
+
+const bumpRateLimit = () => {
+  const current = getRateLimit()
+  const now = Date.now()
+  // Reset window if lockout period has passed
+  if (now - current.since > LOCKOUT_MS) {
+    localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({ count: 1, since: now }))
+    return false
+  }
+  const updated = { count: current.count + 1, since: current.since }
+  localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(updated))
+  return updated.count >= MAX_ATTEMPTS
+}
+
+const isLockedOut = () => {
+  const { count, since } = getRateLimit()
+  if (count >= MAX_ATTEMPTS && Date.now() - since < LOCKOUT_MS) return true
+  return false
+}
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
@@ -23,11 +53,19 @@ export const AuthProvider = ({ children }) => {
       })
       return () => subscription?.unsubscribe?.()
     } else {
-      // Local session check
+      // Local session check — also enforce expiry
       try {
         const stored = localStorage.getItem(LOCAL_ADMIN_KEY)
         if (stored) {
-          setUser(JSON.parse(stored))
+          const parsed = JSON.parse(stored)
+          const age = Date.now() - (parsed.loginAt || 0)
+          if (age < SESSION_TTL_MS) {
+            setUser(parsed)
+          } else {
+            // Session expired — clean up silently
+            localStorage.removeItem(LOCAL_ADMIN_KEY)
+            console.info('Admin session expired. Please log in again.')
+          }
         }
       } catch (e) {
         console.error(e)
@@ -37,28 +75,54 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   const signIn = async (email, password) => {
-    if (isSupabaseConfigured) {
-      const res = await supabase.auth.signInWithPassword({ email, password })
-      return res
+    // Check rate limiting first
+    if (isLockedOut()) {
+      return {
+        data: null,
+        error: { message: 'Too many failed login attempts. Please wait 15 minutes before trying again.' }
+      }
     }
 
-    // Local / Demo Admin authentication fallback
-    // Accept admin / gdg2026 or any email if demo
-    if ((email === 'admin@gdg.org' || email === 'admin@gdgskncoe.com' || email.includes('admin')) && password.length >= 4) {
-      const demoUser = {
+    // 1. If Supabase is configured with real keys, authenticate via Supabase Auth
+    if (isSupabaseConfigured) {
+      const res = await supabase.auth.signInWithPassword({ email, password })
+      if (!res.error && res.data?.user) {
+        localStorage.removeItem(RATE_LIMIT_KEY)
+        return res
+      }
+      if (res.error) {
+        bumpRateLimit()
+        return { data: null, error: { message: res.error.message || 'Supabase authentication failed.' } }
+      }
+    }
+
+    // 2. Local fallback check (from .env.local) when Supabase is not configured
+    const allowedEmail = import.meta.env.VITE_LOCAL_ADMIN_EMAIL
+    const allowedPassword = import.meta.env.VITE_LOCAL_ADMIN_PASSWORD
+
+    if (
+      allowedEmail && allowedPassword &&
+      email.trim().toLowerCase() === allowedEmail.trim().toLowerCase() &&
+      password === allowedPassword
+    ) {
+      // Reset rate limit on success
+      localStorage.removeItem(RATE_LIMIT_KEY)
+      const adminUser = {
         id: 'local-admin-1',
         email: email,
         user_metadata: { name: 'GDG Admin' },
-        isDemo: true,
+        isLocal: true,
+        loginAt: Date.now(),  // timestamp for session expiry check
       }
-      localStorage.setItem(LOCAL_ADMIN_KEY, JSON.stringify(demoUser))
-      setUser(demoUser)
-      return { data: { user: demoUser }, error: null }
-    } else {
-      return {
-        data: null,
-        error: { message: 'Invalid credentials. For quick demo login, use admin@gdgskncoe.com and password: admin' }
-      }
+      localStorage.setItem(LOCAL_ADMIN_KEY, JSON.stringify(adminUser))
+      setUser(adminUser)
+      return { data: { user: adminUser }, error: null }
+    }
+
+    bumpRateLimit()
+    return {
+      data: null,
+      error: { message: isSupabaseConfigured ? 'Invalid login credentials.' : 'Supabase keys not set in .env. Enter local credentials from .env.local or add Supabase keys.' }
     }
   }
 

@@ -1,12 +1,26 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { dbFetch, dbInsert, dbUpdate, dbDelete } from '../lib/db'
+import { dbFetch, dbInsert, dbUpdate, dbDelete, sortEventsByDate } from '../lib/db'
 import { AdminHeader, AdminBtn, AdminInput, AdminSelect, AdminTextarea, ImageUpload, StatusBadge, Spinner, EmptyState } from './AdminUI'
 
 const COLORS = ['bg-primary', 'bg-danger', 'bg-warning', 'bg-success']
 const TYPES  = ['Flagship Event', 'Workshop', 'Speaker Session', 'Info Session', 'Hackathon', 'Conference']
 
-const BLANK = { title: '', type: 'Workshop', date: '', color: 'bg-primary', description: '', tags: '', image: '' }
+const ICONS = [
+  { id: 'terminal', label: 'Terminal / Backend' },
+  { id: 'rocket_launch', label: 'Rocket / Flagship' },
+  { id: 'cloud', label: 'Cloud / DevOps' },
+  { id: 'shield', label: 'Shield / Security' },
+  { id: 'smartphone', label: 'Smartphone / Mobile' },
+  { id: 'emoji_events', label: 'Trophy / Hackathon' },
+  { id: 'waving_hand', label: 'Hand / Orientation' },
+  { id: 'lightbulb', label: 'Lightbulb / Ideas' },
+  { id: 'psychology', label: 'Brain / AI' },
+  { id: 'ac_unit', label: 'Winter / Snowflake' },
+  { id: 'event', label: 'Calendar / General' }
+]
+
+const BLANK = { title: '', type: 'Workshop', date: '', color: 'bg-primary', icon: 'terminal', description: '', tags: '', image: '' }
 
 const EventForm = ({ initial = BLANK, onSave, onCancel, saving }) => {
   const [form, setForm] = useState(initial)
@@ -25,6 +39,9 @@ const EventForm = ({ initial = BLANK, onSave, onCancel, saving }) => {
         <AdminInput label="Date *" value={form.date} onChange={set('date')} required placeholder="e.g. Oct 26, 2025" />
         <AdminSelect label="Color Theme" value={form.color} onChange={set('color')}>
           {COLORS.map(c => <option key={c} value={c}>{c.replace('bg-', '')}</option>)}
+        </AdminSelect>
+        <AdminSelect label="Icon" value={form.icon || 'event'} onChange={set('icon')}>
+          {ICONS.map(i => <option key={i.id} value={i.id}>{i.label}</option>)}
         </AdminSelect>
       </div>
 
@@ -56,7 +73,7 @@ const AdminEvents = () => {
   const load = useCallback(async () => {
     setLoading(true)
     const { data } = await dbFetch('events', 'date', false)
-    setEvents(data || [])
+    setEvents(sortEventsByDate(data || [], true))
     setLoading(false)
   }, [])
 

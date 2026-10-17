@@ -1,7 +1,7 @@
-﻿// ── Shared Admin UI primitives ────────────────────────────────────────────────
+// ── Shared Admin UI primitives ────────────────────────────────────────────────
 
 export const AdminHeader = ({ icon, title, color = 'bg-primary', action }) => (
-  <div className="flex items-center justify-between mb-8">
+  <div className="flex items-center justify-between mb-10 pb-6 border-b-4 border-black/10">
     <div className="flex items-center gap-4">
       <div className={`w-12 h-12 ${color} border-2 border-black flex items-center justify-center shadow-brutal-sm`}>
         <span className="material-symbols-outlined text-white text-2xl">{icon}</span>
@@ -77,12 +77,39 @@ export const EmptyState = ({ icon, text }) => (
 )
 
 // Image upload widget
-import { useState } from 'react'
-import { uploadImage } from '../lib/db'
+import { useState, useEffect } from 'react'
+import { uploadImage, convertGoogleDriveUrl } from '../lib/db'
 
 export const ImageUpload = ({ label = 'Image', value, onChange }) => {
+  const [urlInput, setUrlInput] = useState(value || '')
+  const [sourceType, setSourceType] = useState('') // 'drive' | 'github' | ''
   const [uploading, setUploading] = useState(false)
   const [err, setErr] = useState('')
+
+  useEffect(() => {
+    setUrlInput(value || '')
+    if (value) {
+      if (value.includes('googleusercontent.com') || value.includes('drive.google.com')) setSourceType('drive')
+      else if (value.includes('githubusercontent.com') || value.includes('github.com')) setSourceType('github')
+      else setSourceType('')
+    } else {
+      setSourceType('')
+    }
+  }, [value])
+
+  const handleUrlChange = (e) => {
+    const raw = e.target.value
+    setUrlInput(raw)
+    const converted = convertGoogleDriveUrl(raw)
+    if (raw.includes('github.com') || converted.includes('githubusercontent.com')) {
+      setSourceType('github')
+    } else if (raw.includes('drive.google.com') || converted.includes('googleusercontent.com')) {
+      setSourceType('drive')
+    } else {
+      setSourceType('')
+    }
+    onChange(converted)
+  }
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0]
@@ -91,6 +118,8 @@ export const ImageUpload = ({ label = 'Image', value, onChange }) => {
     setErr('')
     try {
       const url = await uploadImage(file)
+      setUrlInput(url)
+      setSourceType('')
       onChange(url)
     } catch (ex) {
       setErr(ex.message)
@@ -100,35 +129,82 @@ export const ImageUpload = ({ label = 'Image', value, onChange }) => {
 
   return (
     <div className="flex flex-col gap-2">
-      {label && <label className="text-[10px] font-black uppercase tracking-widest text-black/60">{label}</label>}
-      <div className="flex gap-3 items-center">
-        <label className={`flex items-center gap-2 px-4 py-2 bg-white border-2 border-black text-xs font-black uppercase shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-brutal-sm transition-all cursor-pointer ${uploading ? 'opacity-50' : ''}`}>
-          <span className="material-symbols-outlined text-sm">{uploading ? 'hourglass_empty' : 'upload'}</span>
-          {uploading ? 'Uploading...' : 'Choose File'}
-          <input type="file" accept="image/*" onChange={handleFile} className="hidden" disabled={uploading} />
-        </label>
-        {value && (
-          <img src={value} alt="preview" className="w-16 h-16 object-cover border-2 border-black" />
+      <div className="flex items-center justify-between">
+        {label && <label className="text-[10px] font-black uppercase tracking-widest text-black/70">{label}</label>}
+        <span className="text-[9px] font-black uppercase text-success bg-success/10 px-2 py-0.5 border border-success/30 flex items-center gap-1">
+          <span className="material-symbols-outlined !text-xs">cloud_done</span>
+          Google Drive + GitHub Live CDN
+        </span>
+      </div>
+
+      <div className="relative">
+        <input
+          type="text"
+          value={urlInput}
+          onChange={handleUrlChange}
+          placeholder="Paste Google Drive OR GitHub link (e.g. github.com/.../photo.jpg or drive.google.com/...)"
+          className="w-full border-2 border-black px-3 py-2.5 text-xs font-bold text-black bg-white focus:outline-none focus:border-primary transition-all placeholder:text-black/35 pr-10"
+        />
+        {urlInput && (
+          <button
+            type="button"
+            onClick={() => { setUrlInput(''); setSourceType(''); onChange('') }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-black/40 hover:text-danger text-sm font-black p-1"
+            title="Clear image"
+          >
+            ✕
+          </button>
         )}
       </div>
-      {value && (
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="or paste a URL"
-          className="w-full border-2 border-black px-3 py-2 text-xs font-bold text-black bg-white focus:outline-none focus:border-primary transition-all"
-        />
+
+      {sourceType === 'drive' && (
+        <div className="text-[10px] font-black uppercase text-success flex items-center gap-1">
+          <span className="material-symbols-outlined !text-sm">check_circle</span>
+          Google Drive link auto-converted to direct live CDN image
+        </div>
       )}
-      {!value && (
-        <input
-          type="text"
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="or paste an image URL"
-          className="w-full border-2 border-black px-3 py-2 text-xs font-bold text-black bg-white focus:outline-none focus:border-primary transition-all"
-        />
+
+      {sourceType === 'github' && (
+        <div className="text-[10px] font-black uppercase text-primary flex items-center gap-1">
+          <span className="material-symbols-outlined !text-sm">check_circle</span>
+          GitHub Repository link auto-converted to direct raw CDN image
+        </div>
       )}
+
+      {/* Quick guide / local upload */}
+      <div className="flex items-center justify-between text-[10px] text-black/50 font-bold">
+        <span>👉 Paste from <b>Google Drive</b> (Anyone with link) or <b>GitHub repository</b></span>
+        <label className="text-black/60 hover:text-black hover:underline cursor-pointer flex items-center gap-1 uppercase font-black text-[9px]">
+          <span className="material-symbols-outlined !text-xs">upload</span>
+          {uploading ? 'Processing...' : 'or pick local file'}
+          <input type="file" accept="image/*" onChange={handleFile} className="hidden" disabled={uploading} />
+        </label>
+      </div>
+
       {err && <p className="text-danger text-[10px] font-black">{err}</p>}
+
+      {/* Live Preview */}
+      {value && (
+        <div className="mt-1 flex items-center gap-3 p-2.5 bg-surface-dark border-2 border-black">
+          <div className="w-14 h-14 bg-white border-2 border-black overflow-hidden shrink-0 shadow-brutal-sm">
+            <img
+              src={value}
+              alt="preview"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const match = value.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/)
+                if (match && match[1]) {
+                  e.target.src = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`
+                }
+              }}
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-black uppercase text-black">Live Image Preview</p>
+            <p className="text-[9px] text-black/50 font-mono truncate">{value}</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

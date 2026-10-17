@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { dbFetch } from '../lib/db'
+import { dbFetch, sortEventsByDate, convertGoogleDriveUrl } from '../lib/db'
 
 const defaultEventsData = {
   "2026": [
+    {
+      id: 'connecting-backend-engineering',
+      date: 'Oct 13, 2026',
+      type: 'Workshop',
+      title: 'Connecting To Backend Engineering',
+      color: 'bg-danger'
+    },
     {
       id: 'synthera-2026',
       date: 'February 23-25, 2026',
@@ -99,7 +106,17 @@ const TimelineItem = ({ event, index }) => {
       <div className="w-[calc(100%-3rem)] md:w-[45%] ml-12 md:ml-0 bg-white border-4 border-black p-6 md:p-8 shadow-brutal hover:shadow-brutal-lg transition-all hover:-translate-y-1">
         {event.image && (
           <div className="mb-4 border-2 border-black overflow-hidden max-h-56 bg-surface-dark shadow-brutal-sm">
-            <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
+            <img
+              src={convertGoogleDriveUrl(event.image)}
+              alt={event.title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const match = event.image?.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/)
+                if (match && match[1]) {
+                  e.target.src = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`
+                }
+              }}
+            />
           </div>
         )}
         <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -141,21 +158,24 @@ const Events = () => {
     const fetchDbEvents = async () => {
       const { data } = await dbFetch('events')
       if (data && data.length > 0) {
-        // Group by extracted year or default
-        const grouped = { ...defaultEventsData }
+        // DB has data — group by year and use as primary source
+        const grouped = {}
         data.forEach(item => {
-          const match = item.date?.match(/\b(202\d)\b/)
+          const match = item.date?.match(/\b(20\d{2})\b/)
           const year = match ? match[1] : '2026'
           if (!grouped[year]) grouped[year] = []
-
-          // Avoid duplicate by id or title
-          const exists = grouped[year].some(e => e.id === item.id || e.title === item.title)
-          if (!exists) {
-            grouped[year] = [item, ...grouped[year]]
-          }
+          grouped[year].push(item)
+        })
+        // Sort events within each year date-wise (newest event first)
+        Object.keys(grouped).forEach(year => {
+          grouped[year] = sortEventsByDate(grouped[year], true)
         })
         setEventsByYear(grouped)
+        // Auto-select the most recent year
+        const latestYear = Object.keys(grouped).sort((a, b) => b - a)[0]
+        if (latestYear) setSelectedYear(latestYear)
       }
+      // If DB is empty, keep defaultEventsData as fallback (already set in useState)
     }
     fetchDbEvents()
   }, [])

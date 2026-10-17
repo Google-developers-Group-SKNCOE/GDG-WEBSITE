@@ -19,14 +19,6 @@ const AdminLogin = () => {
     setLoading(false)
   }
 
-  const handleQuickDemo = async () => {
-    setLoading(true)
-    setError('')
-    const { error } = await signIn('admin@gdgskncoe.com', 'admin123')
-    if (error) setError(error.message)
-    setLoading(false)
-  }
-
   return (
     <div className="min-h-screen grid-paper flex items-center justify-center p-6">
       <motion.div
@@ -58,10 +50,10 @@ const AdminLogin = () => {
           <div className="mb-6 p-3 bg-surface-dark border-2 border-black flex items-center justify-between text-xs font-black uppercase">
             <span className="flex items-center gap-2">
               <span className={`w-2.5 h-2.5 rounded-full ${isSupabaseConfigured ? 'bg-success' : 'bg-warning animate-pulse'}`} />
-              {isSupabaseConfigured ? 'Cloud Supabase Mode' : 'Local Database Mode'}
+              {isSupabaseConfigured ? 'Supabase Live' : 'Local Dev Mode'}
             </span>
-            <span className="text-[10px] text-black/40">
-              {isSupabaseConfigured ? 'Live' : 'Ready to use'}
+            <span className="text-[10px] text-black/50">
+              {isSupabaseConfigured ? 'DB + Direct Upload' : 'Ready to use'}
             </span>
           </div>
 
@@ -73,7 +65,7 @@ const AdminLogin = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="admin@gdgskncoe.com"
+                placeholder="admin@example.com"
                 className="w-full border-2 border-black px-4 py-3 text-sm font-bold text-black bg-white focus:outline-none focus:border-primary transition-all placeholder:text-black/25"
               />
             </div>
@@ -90,8 +82,17 @@ const AdminLogin = () => {
             </div>
 
             {error && (
-              <div className="bg-danger text-white border-2 border-black px-4 py-3 text-xs font-black uppercase shadow-brutal-sm">
-                {error}
+              <div className="bg-danger text-white border-2 border-black px-4 py-3 text-xs font-black uppercase shadow-brutal-sm flex items-center justify-between">
+                <span>{error}</span>
+                {error.includes('Too many') && (
+                  <button
+                    type="button"
+                    onClick={() => { localStorage.removeItem('gdg_login_attempts'); setError('') }}
+                    className="underline text-[10px] ml-2 font-black cursor-pointer hover:text-black shrink-0"
+                  >
+                    Reset Lock
+                  </button>
+                )}
               </div>
             )}
 
@@ -103,16 +104,6 @@ const AdminLogin = () => {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
 
-            {!isSupabaseConfigured && (
-              <button
-                type="button"
-                onClick={handleQuickDemo}
-                disabled={loading}
-                className="w-full bg-yellow-400 text-black py-3 font-black uppercase tracking-wider text-xs border-2 border-black shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-brutal-sm active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
-              >
-                ⚡ 1-Click Quick Demo Sign In
-              </button>
-            )}
           </form>
         </div>
       </motion.div>

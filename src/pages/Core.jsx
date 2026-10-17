@@ -1,59 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { dbFetch } from '../lib/db'
-import { isSupabaseConfigured } from '../lib/supabase'
-
-const leaders = [
-  { id: 'leader-1', name: 'Swarnim Shamgaonkar', roleTag: 'Organizer', roleColor: 'bg-primary', category: 'Organizer', image: '/core-images/organizer.jpeg', linkedin: 'https://www.linkedin.com/in/swarnim-shamgaonkar-b725472b1/' },
-  { id: 'leader-2', name: 'Pratham Jadhav', roleTag: 'Co-Organizer', roleColor: 'bg-success', category: 'Organizer', image: '/core-images/co-organizer.jpg', linkedin: 'https://www.linkedin.com/in/jadhavprathammm/' },
-]
-
-const domains = [
-  {
-    lead: { name: 'Sudeep Sakpal', roleTag: 'Web Development Lead', roleColor: 'bg-primary', image: '/core-images/leads/Web Dev Lead.jpg', linkedin: 'https://www.linkedin.com/in/sudeep-sakpal/' },
-    coLead: { name: 'Hritika Gupta', roleTag: 'Web Development Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Web dev Colead.jpg', linkedin: 'https://www.linkedin.com/in/hritika3/' },
-  },
-  {
-    lead: { name: 'Niranjan Sonawane', roleTag: 'AI/ML Lead', roleColor: 'bg-primary', image: '/core-images/leads/AIML Lead.jpg', linkedin: 'https://www.linkedin.com/in/niranjan-sonawane-59079728a/' },
-    coLead: { name: 'Manasvi Bhandarkar', roleTag: 'AI/ML Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Aiml Co-lead.jpg', linkedin: 'https://www.linkedin.com/in/manasvi-bhandarkar-3a32282a7/' },
-  },
-  {
-    lead: { name: 'Srushti Dawkhar', roleTag: 'Android Development Lead', roleColor: 'bg-primary', image: '/core-images/leads/Android Lead.jpg', linkedin: 'https://www.linkedin.com/in/srushti-d-179146220/' },
-    coLead: { name: 'Aditya Khawale', roleTag: 'Android Development Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Android Co lead.jpg', linkedin: 'https://www.linkedin.com/in/aditya-khawale/' },
-  },
-  {
-    lead: { name: 'Tvisha Ghiya', roleTag: 'Competitive Programming Lead', roleColor: 'bg-primary', image: '/core-images/leads/Competitive Lead.jpg', linkedin: 'https://www.linkedin.com/in/tvisha-ghiya-387062314/' },
-    coLead: { name: 'Kaiwalya Gunjal', roleTag: 'Competitive Programming Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Competitive Co-lead.jpg', linkedin: 'https://www.linkedin.com/in/kaiwlya-gunjal-561aa828a/' },
-  },
-  {
-    lead: { name: 'Elton Fernandes', roleTag: 'Cyber Security Lead', roleColor: 'bg-primary', image: '/core-images/leads/Cyber Security Lead.jpg', linkedin: 'https://www.linkedin.com/in/elton-fernandes18/' },
-    coLead: { name: 'Priyal Sathe', roleTag: 'Cyber Security Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Cyber Security Co lead.jpg', linkedin: 'https://www.linkedin.com/in/priyal-sathe/' },
-  },
-  {
-    lead: { name: 'Vinayak Kapkar', roleTag: 'Event Management Lead', roleColor: 'bg-primary', image: '/core-images/leads/Event Management Lead.jpeg', linkedin: 'https://www.linkedin.com/in/vinayak-kapkar-109b16230/' },
-    coLead: { name: 'Shreya Kadam', roleTag: 'Event Management Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Event Management Co-lead.jpg', linkedin: 'https://www.linkedin.com/in/shreya-kadam-b30881355/' },
-  },
-  {
-    lead: { name: 'Aditi Deshpande', roleTag: 'Social Media Lead', roleColor: 'bg-primary', image: '/core-images/leads/Social Media Lead.jpg', linkedin: 'https://www.linkedin.com/in/aditi-deshpande-9aba32274/' },
-    coLead: { name: 'Parth Karpe', roleTag: 'Social Media Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Social Media Colead.jpeg', linkedin: null },
-  },
-  {
-    lead: { name: 'Avishkar Choundkar', roleTag: 'Sponsorship Lead', roleColor: 'bg-primary', image: '/core-images/leads/Sponsorship lead.jpg', linkedin: 'https://www.linkedin.com/in/avishkarchoundkar/' },
-    coLead: { name: 'Alphiya Kazi', roleTag: 'Sponsorship Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Sponsorship Colead.jpg', linkedin: 'https://www.linkedin.com/in/alphiya-kazi-1609b12a1/' },
-  },
-  {
-    lead: { name: 'Aarya Anekar', roleTag: 'Cloud Computing Lead', roleColor: 'bg-primary', image: '/core-images/leads/Cloud Lead.jpg', linkedin: 'https://www.linkedin.com/in/aaryaa2005/' },
-    coLead: { name: 'Harsh Dharmawat', roleTag: 'Cloud Computing Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Cloud Computing Co lead.jpg', linkedin: 'https://www.linkedin.com/in/harsh-dharmawat/' },
-  },
-  {
-    lead: { name: 'Dhanashree Labhe', roleTag: 'Women Tech Lead', roleColor: 'bg-primary', image: '/core-images/leads/Women Tech Lead.jpg', linkedin: 'https://www.linkedin.com/in/dhanashree-labhe-232344281/' },
-    coLead: { name: 'Dynanada Thuse', roleTag: 'Women Tech Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Women Tech Colead.jpg', linkedin: 'https://www.linkedin.com/in/dnyanada-thuse-992654317/' },
-  },
-  {
-    lead: { name: 'Madhura Gore', roleTag: 'UI/UX Lead', roleColor: 'bg-primary', image: '/core-images/leads/UIUX Lead.jpg', linkedin: 'https://www.linkedin.com/in/madhuragore/' },
-    coLead: { name: 'Divya Bhandari', roleTag: 'UI/UX Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/UIUX Colead.jpg', linkedin: 'https://www.linkedin.com/in/divya-bhandari-14b4a1308/' },
-  },
-]
+import { useState, useEffect } from 'react'
+import { dbFetch, SEEDS, convertGoogleDriveUrl } from '../lib/db'
 
 const LeaderCard = ({ person, index }) => (
   <motion.div
@@ -66,11 +14,21 @@ const LeaderCard = ({ person, index }) => (
     <div className="flex flex-col md:flex-row gap-8 items-center w-full">
       <div className="relative shrink-0">
         <div className="w-48 h-48 rounded overflow-hidden border-4 border-black bg-white shadow-brutal">
-          <img alt={person.name} className="w-full h-full object-cover filter grayscale contrast-125 group-hover:grayscale-0 transition-all duration-300" src={person.image} />
+          <img
+            alt={person.name}
+            className="w-full h-full object-cover filter grayscale contrast-125 group-hover:grayscale-0 transition-all duration-300"
+            src={convertGoogleDriveUrl(person.image)}
+            onError={(e) => {
+              const match = person.image?.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/)
+              if (match && match[1]) {
+                e.target.src = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`
+              }
+            }}
+          />
         </div>
       </div>
       <div className="flex-1">
-        <span className={`inline-block px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] border-2 border-black text-white ${person.roleColor} mb-4 shadow-brutal-sm`}>
+        <span className={`inline-block px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] border-2 border-black text-white ${person.roleColor || 'bg-primary'} mb-4 shadow-brutal-sm`}>
           {person.roleTag}
         </span>
         <h3 className="font-headline text-3xl font-black mb-6 text-black uppercase">{person.name}</h3>
@@ -86,29 +44,107 @@ const LeaderCard = ({ person, index }) => (
 )
 
 const Core = () => {
-  const [team, setTeam] = useState([...leaders, ...domains.flatMap((domain) => [domain.lead, domain.coLead])])
+  const [team, setTeam] = useState(SEEDS.team || [])
 
   useEffect(() => {
-    const loadTeam = async () => {
-      const { data } = await dbFetch('team')
-      const hasLocalAdminChanges = (data || []).some((member) => !['tm-1', 'tm-2'].includes(member.id))
-      if (data && data.length > 0 && (isSupabaseConfigured || hasLocalAdminChanges)) {
-        setTeam(data)
-      }
-    }
-
-    loadTeam()
+    dbFetch('team', 'created_at', true).then(({ data }) => {
+      if (data && data.length > 0) setTeam(data)
+    })
   }, [])
 
-  const leadership = team.filter((member) => ['Organizer', 'Co-Organizer'].includes(member.category) || /organizer/i.test(member.roleTag || ''))
-  const coreMembers = team.filter((member) => !leadership.some((leader) => leader.id === member.id))
+  // Universal ranking function for team hierarchy:
+  // Rank 1: Mentors / Faculty Advisors (At the very top!)
+  // Rank 2: Organizers (Organiser / Organizer)
+  // Rank 3: Co-Organizers (Co-Organizer / Co-Organiser)
+  // Rank 10: Domains (AI/ML, Web, UI/UX, Events, Android, Cloud...)
+  const getRank = (m) => {
+    const cat = (m.category || '').toLowerCase()
+    const role = (m.roleTag || '').toLowerCase()
+    const text = `${cat} ${role}`
+
+    // 1. Mentors at the absolute top
+    if (text.includes('mentor') || text.includes('advisor') || text.includes('faculty')) return 1
+
+    // 2. Organizers
+    if (text.includes('organ') && !text.includes('co')) return 2
+
+    // 3. Co-Organizers
+    if (text.includes('organ') && text.includes('co')) return 3
+
+    return 10
+  }
+
+  const extractDomain = (m) => {
+    const text = `${m.roleTag || ''} ${m.category || ''}`.toLowerCase()
+    if (text.includes('ai') || text.includes('ml') || text.includes('machine learning')) return 'aiml'
+    if (text.includes('web')) return 'web'
+    if (text.includes('ui') || text.includes('ux') || text.includes('design')) return 'uiux'
+    if (text.includes('event')) return 'events'
+    if (text.includes('android') || text.includes('app')) return 'android'
+    if (text.includes('cloud')) return 'cloud'
+    if (text.includes('cyber') || text.includes('security')) return 'cyber'
+    if (text.includes('competitive') || text.includes('cp')) return 'cp'
+    if (text.includes('social')) return 'social'
+    if (text.includes('sponsor')) return 'sponsorship'
+    if (text.includes('women') || text.includes('wit')) return 'wit'
+    return 'other'
+  }
+
+  const isCoLead = (m) => {
+    const role = (m.roleTag || '').toLowerCase()
+    const cat = (m.category || '').toLowerCase()
+    return role.includes('co-') || role.includes('colead') || role.includes('co lead') || cat.includes('co-')
+  }
+
+  const domainOrder = [
+    'aiml',
+    'web',
+    'uiux',
+    'events',
+    'android',
+    'cloud',
+    'cyber',
+    'cp',
+    'social',
+    'sponsorship',
+    'wit',
+    'other'
+  ]
+
+  // Tier 1: Mentors
+  const mentors = team
+    .filter(m => getRank(m) === 1)
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+
+  // Tier 2: Organizers & Co-Organizers
+  const organizers = team
+    .filter(m => getRank(m) === 2 || getRank(m) === 3)
+    .sort((a, b) => getRank(a) - getRank(b) || (a.name || '').localeCompare(b.name || ''))
+
+  // Tier 3: Domain Leads & Co-Leads (AI/ML first, Web Dev second, then UI/UX, Events, Android, etc.)
+  const domainMembers = team
+    .filter(m => getRank(m) >= 10)
+    .sort((a, b) => {
+      const domA = extractDomain(a)
+      const domB = extractDomain(b)
+      const orderA = domainOrder.indexOf(domA)
+      const orderB = domainOrder.indexOf(domB)
+      if (orderA !== orderB) return orderA - orderB
+
+      // Lead comes first, Co-Lead immediately follows side-by-side
+      const coA = isCoLead(a) ? 1 : 0
+      const coB = isCoLead(b) ? 1 : 0
+      if (coA !== coB) return coA - coB
+
+      return (a.name || '').localeCompare(b.name || '')
+    })
 
   return (
     <div className="grid-bg min-h-screen border-x-0 md:border-x-4 border-black max-w-screen-2xl mx-auto overflow-hidden">
       <main className="max-w-6xl mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-24 md:pb-40">
 
         {/* Hero Section */}
-        <section className="mb-16 md:mb-32 text-center bg-white border-4 border-black p-6 md:p-12 brutal-card shadow-brutal-lg rotate-1">
+        <section className="mb-12 md:mb-20 text-center bg-white border-4 border-black p-6 md:p-12 brutal-card shadow-brutal-lg rotate-1">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-success text-white border-2 border-black text-[10px] md:text-[12px] font-black uppercase tracking-widest mb-6 md:mb-8 shadow-brutal-sm">
             Meet the Team
           </div>
@@ -117,29 +153,42 @@ const Core = () => {
             <span className="text-white bg-danger px-3 md:px-4 border-2 md:border-4 border-black inline-block mt-2 md:mt-4 shadow-brutal -rotate-2">Together.</span>
           </h1>
           <p className="text-base md:text-xl text-black font-bold max-w-2xl mx-auto leading-relaxed bg-surface-dark p-4 border-2 border-black">
-            The GDG SKNCOE core team is a collective of visionary developers and designers committed to fostering a thriving tech ecosystem.
+            The GDG SKNCOE core team is a collective of visionary developers, designers, and community leaders committed to fostering a thriving tech ecosystem.
           </p>
         </section>
 
-        {/* Leadership Section */}
-        <section className="mb-10">
-          <div className="flex items-center gap-4 md:gap-6 mb-12 md:mb-16">
-            <h2 className="font-headline text-3xl md:text-5xl font-black text-black uppercase tracking-tighter bg-warning border-4 border-black px-4 md:px-6 py-2 shadow-brutal">Leadership</h2>
-            <div className="h-2 flex-1 bg-black hidden sm:block"></div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-            {leadership.map((leader, idx) => (
-              <LeaderCard key={leader.id || leader.name} person={leader} index={idx} />
-            ))}
-          </div>
-        </section>
+        {/* Mentors (Top / Upside) */}
+        {mentors.length > 0 && (
+          <section className="mb-8 md:mb-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
+              {mentors.map((person, idx) => (
+                <LeaderCard key={person.id || person.name} person={person} index={idx} />
+              ))}
+            </div>
+          </section>
+        )}
 
-        {/* Domain Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-          {coreMembers.map((member, idx) => (
-            <LeaderCard key={member.id || member.name} person={member} index={idx} />
-          ))}
-        </div>
+        {/* Organizers & Co-Organizers (Directly Beneath Mentors) */}
+        {organizers.length > 0 && (
+          <section className="mb-8 md:mb-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
+              {organizers.map((person, idx) => (
+                <LeaderCard key={person.id || person.name} person={person} index={idx + mentors.length} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Domain Leads & Co-Leads: AI/ML, Web Dev, UI/UX, Events, Android... (Beneath Organizers) */}
+        {domainMembers.length > 0 && (
+          <section className="mb-16">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
+              {domainMembers.map((person, idx) => (
+                <LeaderCard key={person.id || person.name} person={person} index={idx + mentors.length + organizers.length} />
+              ))}
+            </div>
+          </section>
+        )}
 
       </main>
     </div>

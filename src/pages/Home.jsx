@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { dbFetch } from '../lib/db'
-import { isSupabaseConfigured } from '../lib/supabase'
+import { useState, useEffect } from 'react'
+import { dbFetch, convertGoogleDriveUrl, SEEDS } from '../lib/db'
 
 const domains = [
   { icon: 'html', title: 'Web Development', classColor: 'text-primary' },
@@ -19,30 +19,35 @@ const domains = [
   { icon: '😊', title: 'Wanna Join Us ?', classColor: 'text-primary', isEmoji: true }
 ]
 
-const partners = [
-  { id: 'local-1', name: 'Partner 1', logo: "/sponsors/WhatsApp Image 2026-05-01 at 3.07.58 PM.jpeg", url: '' },
-  { id: 'local-2', name: 'Partner 2', logo: "/sponsors/WhatsApp Image 2026-05-01 at 3.09.10 PM.jpeg", url: '' },
-  { id: 'local-3', name: 'Partner 3', logo: "/sponsors/WhatsApp Image 2026-05-01 at 3.10.14 PM.jpeg", url: '' },
-  { id: 'local-4', name: 'Partner 4', logo: "/sponsors/WhatsApp Image 2026-05-01 at 3.11.00 PM.jpeg", url: '' },
-  { id: 'local-5', name: 'Partner 5', logo: "/sponsors/WhatsApp Image 2026-05-01 at 3.12.41 PM.jpeg", url: '' },
-  { id: 'local-6', name: 'Soli', logo: "/sponsors/imresizer-Soli.jpeg", url: '' }
-]
-
 const Home = () => {
-  const [sponsors, setSponsors] = useState(partners)
+  const [sponsors, setSponsors] = useState([])
 
   useEffect(() => {
-    const loadSponsors = async () => {
-      const { data } = await dbFetch('sponsors')
-      const visibleSponsors = (data || []).filter((sponsor) => sponsor.logo)
-      const hasLocalAdminChanges = visibleSponsors.some((sponsor) => sponsor.id !== 'sp-1')
-      if (visibleSponsors.length > 0 && (isSupabaseConfigured || hasLocalAdminChanges)) {
-        setSponsors(visibleSponsors)
-      }
-    }
-
-    loadSponsors()
+    dbFetch('sponsors').then(({ data }) => {
+      if (data && data.length > 0) setSponsors(data)
+    })
   }, [])
+
+  // Guarantee that all 6 partner logos are always visible
+  const activeDbPartners = (sponsors || [])
+    .filter(s => !s.is_deleted && s.logo)
+    .map(s => ({
+      src: convertGoogleDriveUrl(s.logo),
+      name: s.name || 'Partner',
+      url: s.url || null
+    }))
+
+  const defaultPartners = (SEEDS.sponsors || []).map(s => ({
+    src: s.logo,
+    name: s.name,
+    url: s.url
+  }))
+
+  const displayPartners = activeDbPartners.length >= defaultPartners.length
+    ? activeDbPartners
+    : (activeDbPartners.length > 0
+        ? [...activeDbPartners, ...defaultPartners.slice(activeDbPartners.length)]
+        : defaultPartners)
 
   return (
     <main className="relative pt-24 md:pt-32 space-y-24 md:space-y-40 grid-paper min-h-screen border-x-0 md:border-x-4 border-black max-w-screen-2xl mx-auto overflow-hidden">
@@ -131,7 +136,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Sponsors */}
       <section className="pt-8 pb-20 md:pb-24 -mt-8 md:-mt-16 border-y-4 border-black bg-white overflow-hidden">
         <div className="px-6 max-w-7xl mx-auto flex flex-col items-center">
           <div className="bg-black text-white px-4 py-2 border-2 border-black font-black uppercase tracking-widest mb-10 md:mb-12 shadow-brutal-sm -rotate-2 relative z-10 text-xs md:text-sm">
@@ -140,21 +144,24 @@ const Home = () => {
         </div>
         <div className="w-full py-3">
           <div className="flex animate-marquee items-center" style={{ width: 'max-content' }}>
-            {[...sponsors, ...sponsors].map((sponsor, idx) => (
-              <a
-                key={`${sponsor.id || sponsor.name}-${idx}`}
-                href={sponsor.url || undefined}
-                target={sponsor.url ? '_blank' : undefined}
-                rel={sponsor.url ? 'noopener noreferrer' : undefined}
-                className="brutal-card bg-white p-2 w-32 h-32 md:w-40 md:h-40 flex items-center justify-center shrink-0 mx-4 md:mx-6"
-                aria-label={sponsor.name}
-              >
-                <img
-                  className="w-full h-full object-contain filter grayscale contrast-200 hover:grayscale-0 transition-all duration-300 hover:scale-[1.04] cursor-pointer"
-                  alt={sponsor.name || `Partner ${idx + 1}`}
-                  src={sponsor.logo}
-                />
-              </a>
+            {[...displayPartners, ...displayPartners].map((partner, idx) => (
+              <div key={idx} className="brutal-card bg-white p-2 w-32 h-32 md:w-40 md:h-40 flex items-center justify-center shrink-0 mx-4 md:mx-6">
+                {partner.url ? (
+                  <a href={partner.url} target="_blank" rel="noopener noreferrer" title={partner.name}>
+                    <img
+                      className="w-full h-full object-contain filter grayscale contrast-200 hover:grayscale-0 transition-all duration-300 hover:scale-[1.04] cursor-pointer"
+                      alt={partner.name || `Partner ${idx + 1}`}
+                      src={partner.src}
+                    />
+                  </a>
+                ) : (
+                  <img
+                    className="w-full h-full object-contain filter grayscale contrast-200 hover:grayscale-0 transition-all duration-300 hover:scale-[1.04] cursor-pointer"
+                    alt={partner.name || `Partner ${idx + 1}`}
+                    src={partner.src}
+                  />
+                )}
+              </div>
             ))}
           </div>
         </div>

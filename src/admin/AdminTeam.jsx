@@ -4,7 +4,7 @@ import { dbFetch, dbInsert, dbUpdate, dbDelete } from '../lib/db'
 import { AdminHeader, AdminBtn, AdminInput, AdminSelect, ImageUpload, StatusBadge, Spinner, EmptyState } from './AdminUI'
 
 const COLORS = ['bg-primary', 'bg-success', 'bg-warning', 'bg-danger']
-const CATEGORIES = ['Organizer', 'Lead', 'Co-Lead', 'Core Member']
+const CATEGORIES = ['Organizer', 'Co-Organizer', 'Lead', 'Co-Lead', 'Mentor']
 
 const BLANK_MEMBER = {
   name: '',
@@ -24,8 +24,8 @@ const TeamForm = ({ initial = BLANK_MEMBER, onSave, onCancel, saving }) => {
     <form onSubmit={(e) => { e.preventDefault(); onSave(form) }} className="bg-white border-4 border-black shadow-brutal p-6 flex flex-col gap-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <AdminInput label="Full Name *" value={form.name} onChange={set('name')} required placeholder="e.g. Jane Doe" />
-        <AdminInput label="Role / Title *" value={form.roleTag} onChange={set('roleTag')} required placeholder="e.g. AI/ML Lead" />
-        <AdminSelect label="Category" value={form.category} onChange={set('category')}>
+        <AdminInput label="Role / Title *" value={form.roleTag} onChange={set('roleTag')} required placeholder="e.g. AI/ML Lead or Mentor" />
+        <AdminSelect label="Section / Category *" value={form.category} onChange={set('category')}>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </AdminSelect>
         <AdminSelect label="Badge Color" value={form.roleColor} onChange={set('roleColor')}>
@@ -87,6 +87,24 @@ const AdminTeam = () => {
     load()
   }
 
+  // Universal ranking function for team hierarchy
+  const getRank = (m) => {
+    const cat = (m.category || '').toLowerCase()
+    const role = (m.roleTag || '').toLowerCase()
+    const text = `${cat} ${role}`
+    if (text.includes('mentor') || text.includes('advisor') || text.includes('faculty')) return 1
+    if (text.includes('organ') && !text.includes('co')) return 2
+    if (text.includes('organ') && text.includes('co')) return 3
+    return 10
+  }
+
+  const sortedTeam = [...team].sort((a, b) => {
+    const ra = getRank(a)
+    const rb = getRank(b)
+    if (ra !== rb) return ra - rb
+    return (a.name || '').localeCompare(b.name || '')
+  })
+
   return (
     <div>
       <AdminHeader
@@ -114,11 +132,11 @@ const AdminTeam = () => {
         )}
       </AnimatePresence>
 
-      {loading ? <Spinner /> : team.length === 0 ? (
+      {loading ? <Spinner /> : sortedTeam.length === 0 ? (
         <EmptyState icon="person_off" text="No team members yet. Add the first member!" />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {team.map(member => (
+          {sortedTeam.map(member => (
             <motion.div
               key={member.id}
               layout
@@ -137,9 +155,11 @@ const AdminTeam = () => {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className={`inline-block px-2 py-0.5 text-[9px] font-black uppercase text-white border border-black ${member.roleColor || 'bg-primary'} mb-1`}>
-                    {member.roleTag}
-                  </span>
+                  <div className="mb-1">
+                    <span className={`inline-block px-2 py-0.5 text-[9px] font-black uppercase text-white border border-black ${member.roleColor || 'bg-primary'}`}>
+                      {member.roleTag}
+                    </span>
+                  </div>
                   <h3 className="font-headline font-black text-black text-base uppercase truncate leading-tight">{member.name}</h3>
                   {member.linkedin && (
                     <a href={member.linkedin} target="_blank" rel="noopener noreferrer" className="text-xs text-primary font-bold hover:underline block truncate mt-0.5">

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { motion, AnimatePresence } from 'framer-motion'
+import { SEEDS } from '../lib/db'
+import { supabase } from '../lib/supabase'
 import AdminEvents from './AdminEvents'
 import AdminResources from './AdminResources'
 import AdminSponsors from './AdminSponsors'
@@ -24,115 +26,53 @@ const SECTION_COLORS = {
   comments:  'bg-primary',
 }
 
-const SQL_SCHEMA = `-- 1. Events Table
-create table if not exists events (
-  id text primary key default gen_random_uuid()::text,
-  title text not null,
-  type text not null,
-  date text not null,
-  color text default 'bg-primary',
-  description text,
-  tags text[],
-  image text,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
--- 2. Resources Table
-create table if not exists resources (
-  id text primary key default gen_random_uuid()::text,
-  event_id text references events(id) on delete cascade,
-  label text not null,
-  icon text default 'slideshow',
-  url text not null,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
--- 3. Core Team Table
-create table if not exists team (
-  id text primary key default gen_random_uuid()::text,
-  name text not null,
-  roleTag text not null,
-  roleColor text default 'bg-primary',
-  category text default 'Lead',
-  image text,
-  linkedin text,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
--- 4. Sponsors Table
-create table if not exists sponsors (
-  id text primary key default gen_random_uuid()::text,
-  name text not null,
-  tier text default 'Community Partner',
-  logo text,
-  url text,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
--- 5. Community Comments Table
-create table if not exists comments (
-  id text primary key default gen_random_uuid()::text,
-  name text not null,
-  "eventRef" text default 'General',
-  "eventId" text default 'General',
-  message text not null,
-  timestamp timestamp with time zone default timezone('utc'::text, now()),
-  "createdAt" timestamp with time zone default timezone('utc'::text, now()),
-  likes integer default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
--- Enable public read, admin write policies
-alter table events enable row level security;
-drop policy if exists "Public read events" on events;
-drop policy if exists "Public insert/update/delete events" on events;
-drop policy if exists "Authenticated write events" on events;
-create policy "Public read events" on events for select using (true);
-create policy "Authenticated write events" on events for all to authenticated using (true) with check (true);
-
-alter table resources enable row level security;
-drop policy if exists "Public read resources" on resources;
-drop policy if exists "Public insert/update/delete resources" on resources;
-drop policy if exists "Authenticated write resources" on resources;
-create policy "Public read resources" on resources for select using (true);
-create policy "Authenticated write resources" on resources for all to authenticated using (true) with check (true);
-
-alter table team enable row level security;
-drop policy if exists "Public read team" on team;
-drop policy if exists "Public insert/update/delete team" on team;
-drop policy if exists "Authenticated write team" on team;
-create policy "Public read team" on team for select using (true);
-create policy "Authenticated write team" on team for all to authenticated using (true) with check (true);
-
-alter table sponsors enable row level security;
-drop policy if exists "Public read sponsors" on sponsors;
-drop policy if exists "Public insert/update/delete sponsors" on sponsors;
-drop policy if exists "Authenticated write sponsors" on sponsors;
-create policy "Public read sponsors" on sponsors for select using (true);
-create policy "Authenticated write sponsors" on sponsors for all to authenticated using (true) with check (true);
-
-alter table comments enable row level security;
-drop policy if exists "Public read comments" on comments;
-drop policy if exists "Public insert comments" on comments;
-drop policy if exists "Public update comments" on comments;
-drop policy if exists "Authenticated delete comments" on comments;
-create policy "Public read comments" on comments for select using (true);
-create policy "Public insert comments" on comments for insert with check (true);
-create policy "Public update comments" on comments for update using (true) with check (true);
-create policy "Authenticated delete comments" on comments for delete to authenticated using (true);
-`
-
 const AdminLayout = () => {
   const { user, signOut, isSupabaseConfigured } = useAuth()
   const [active, setActive] = useState('events')
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [showSqlModal, setShowSqlModal] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  const [syncMsg, setSyncMsg] = useState('')
 
-  const copySql = () => {
-    navigator.clipboard.writeText(SQL_SCHEMA)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  const handleSyncToSupabase = async () => {
+    if (!isSupabaseConfigured) return
+    if (!confirm('This will upload all 24 core team members (leads & co-leads), 10 events, and all resources to your live Supabase database. Continue?')) return
+    setSyncing(true)
+    setSyncMsg('')
+    try {
+      let eventsCount = 0
+      let teamCount = 0
+      let resCount = 0
+
+      // 1. Sync Events
+      for (const ev of (SEEDS.events || [])) {
+        const { error } = await supabase.from('events').upsert(ev, { onConflict: 'id' })
+        if (!error) eventsCount++
+      }
+
+      // 2. Sync Team
+      for (const tm of (SEEDS.team || [])) {
+        const { error } = await supabase.from('team').upsert(tm, { onConflict: 'id' })
+        if (!error) teamCount++
+      }
+
+      // 3. Sync Resources
+      for (const rs of (SEEDS.resources || [])) {
+        const { error } = await supabase.from('resources').upsert(rs, { onConflict: 'id' })
+        if (!error) resCount++
+      }
+
+      // 4. Sync Sponsors
+      for (const sp of (SEEDS.sponsors || [])) {
+        await supabase.from('sponsors').upsert(sp, { onConflict: 'id' })
+      }
+
+      setSyncMsg(`Synced ${teamCount} team members, ${eventsCount} events, and ${resCount} resources!`)
+      setTimeout(() => setSyncMsg(''), 7000)
+    } catch (err) {
+      setSyncMsg('Sync error: ' + err.message)
+    } finally {
+      setSyncing(false)
+    }
   }
 
   const ActiveComponent = {
@@ -144,7 +84,7 @@ const AdminLayout = () => {
   }[active]
 
   return (
-    <div className="min-h-screen bg-surface-dark flex">
+    <div className="h-screen bg-surface-dark flex overflow-hidden">
 
       {/* ── Sidebar ── */}
       <>
@@ -177,19 +117,13 @@ const AdminLayout = () => {
             </Link>
           </div>
 
-          {/* Database Status indicator */}
+          {/* Status indicator */}
           <div className="px-4 py-2 border-b-4 border-white/10 flex items-center justify-between text-[10px] font-black uppercase">
             <span className="flex items-center gap-1.5 text-white/70">
               <span className={`w-2 h-2 rounded-full ${isSupabaseConfigured ? 'bg-success' : 'bg-warning animate-pulse'}`} />
-              {isSupabaseConfigured ? 'Supabase Live' : 'Local DB Mode'}
+              {isSupabaseConfigured ? 'Supabase Live' : 'Local Dev Mode'}
             </span>
-            <button
-              onClick={() => setShowSqlModal(true)}
-              className="text-primary hover:underline flex items-center gap-1"
-            >
-              <span className="material-symbols-outlined text-xs">schema</span>
-              SQL
-            </button>
+            <span className="text-white/40">{isSupabaseConfigured ? 'Cloud DB' : 'Local DB'}</span>
           </div>
 
           {/* Nav */}
@@ -209,7 +143,25 @@ const AdminLayout = () => {
               </button>
             ))}
 
-            <div className="pt-4 mt-auto border-t-2 border-white/10">
+            <div className="pt-4 mt-auto border-t-2 border-white/10 flex flex-col gap-2">
+              {isSupabaseConfigured && (
+                <div>
+                  <button
+                    onClick={handleSyncToSupabase}
+                    disabled={syncing}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-success/20 text-success border border-success/30 text-xs font-black uppercase hover:bg-success hover:text-white transition-all disabled:opacity-50 cursor-pointer"
+                    title="Upload all default events, core team, and resources to Supabase"
+                  >
+                    <span className="material-symbols-outlined text-sm">{syncing ? 'sync' : 'cloud_upload'}</span>
+                    {syncing ? 'Uploading...' : 'Sync Seeds to DB'}
+                  </button>
+                  {syncMsg && (
+                    <p className="text-[10px] text-success font-black mt-1.5 text-center leading-tight bg-success/10 p-1 border border-success/30">
+                      {syncMsg}
+                    </p>
+                  )}
+                </div>
+              )}
               <Link
                 to="/"
                 className="flex items-center gap-3 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white/60 hover:text-white hover:bg-white/10 transition-all"
@@ -240,7 +192,7 @@ const AdminLayout = () => {
       </>
 
       {/* ── Main Content ── */}
-      <div className="flex-1 flex flex-col min-h-screen md:ml-0">
+      <div className="flex-1 flex flex-col h-full overflow-hidden md:ml-0">
         {/* Mobile topbar */}
         <div className="md:hidden flex items-center justify-between p-4 bg-black border-b-4 border-black">
           <button onClick={() => setSidebarOpen(true)} className="text-white">
@@ -253,7 +205,7 @@ const AdminLayout = () => {
         </div>
 
         {/* Content */}
-        <main className="flex-1 p-4 md:p-8 overflow-auto">
+        <main className="flex-1 p-4 pt-8 md:p-10 md:pt-10 overflow-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={active}
@@ -268,49 +220,6 @@ const AdminLayout = () => {
         </main>
       </div>
 
-      {/* SQL Setup Modal */}
-      {showSqlModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-white border-4 border-black shadow-brutal-lg max-w-2xl w-full max-h-[85vh] flex flex-col">
-            <div className="p-4 border-b-4 border-black flex items-center justify-between bg-primary text-white">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined">database</span>
-                <h3 className="font-headline font-black uppercase text-base">Supabase SQL Schema Setup</h3>
-              </div>
-              <button onClick={() => setShowSqlModal(false)} className="text-white hover:opacity-75">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <div className="p-4 overflow-y-auto flex-1 font-mono text-xs">
-              <p className="font-sans font-bold text-xs text-black/70 mb-3">
-                Paste this SQL in your <strong>Supabase Dashboard &gt; SQL Editor</strong> to instantly create tables for Events, Resources, Team, and Sponsors:
-              </p>
-              <pre className="p-3 bg-black text-green-400 border-2 border-black overflow-x-auto whitespace-pre">
-                {SQL_SCHEMA}
-              </pre>
-            </div>
-            <div className="p-4 border-t-4 border-black flex justify-between items-center bg-surface-dark">
-              <span className="text-xs font-bold text-black/60">
-                Create storage bucket <strong>gdg-media</strong> (public) for image uploads.
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={copySql}
-                  className="px-4 py-2 bg-primary text-white font-black text-xs uppercase border-2 border-black shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
-                >
-                  {copied ? 'Copied!' : 'Copy SQL'}
-                </button>
-                <button
-                  onClick={() => setShowSqlModal(false)}
-                  className="px-4 py-2 bg-black text-white font-black text-xs uppercase border-2 border-black"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
