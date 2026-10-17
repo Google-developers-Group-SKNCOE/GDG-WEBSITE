@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
 import { dbFetch, SEEDS, convertGoogleDriveUrl } from '../lib/db'
 
 const LeaderCard = ({ person, index }) => (

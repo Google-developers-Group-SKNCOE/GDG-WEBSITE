@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
 import { dbFetch, convertGoogleDriveUrl, SEEDS } from '../lib/db'
 
 const domains = [
