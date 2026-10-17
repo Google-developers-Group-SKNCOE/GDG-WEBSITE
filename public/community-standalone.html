@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GDG SKNCOE - Community Discussion Feed</title>
+  <!-- Google Fonts & Material Symbols -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Space+Grotesk:wght@700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            gdgBlue: '#4285F4',
+            gdgRed: '#EA4335',
+            gdgYellow: '#FBBC04',
+            gdgGreen: '#34A853',
+          },
+          boxShadow: {
+            'brutal': '4px 4px 0px 0px #000000',
+            'brutal-sm': '2px 2px 0px 0px #000000',
+            'brutal-lg': '6px 6px 0px 0px #000000',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background-color: #f8fafc;
+    }
+    .grid-paper {
+      background-size: 24px 24px;
+      background-image: 
+        linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    }
+  </style>
+</head>
+<body class="grid-paper min-h-screen text-black p-4 md:p-8">
+
+  <main class="max-w-5xl mx-auto">
+    <!-- Header -->
+    <header class="mb-10 bg-white border-4 border-black p-6 md:p-8 shadow-brutal flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <span class="w-3 h-3 rounded-full bg-gdgBlue border border-black"></span>
+          <span class="w-3 h-3 rounded-full bg-gdgRed border border-black"></span>
+          <span class="w-3 h-3 rounded-full bg-gdgYellow border border-black"></span>
+          <span class="w-3 h-3 rounded-full bg-gdgGreen border border-black"></span>
+          <span class="text-xs font-black uppercase tracking-widest text-black/60 ml-1">GDG SKNCOE Community</span>
+        </div>
+        <h1 class="text-3xl md:text-5xl font-black uppercase tracking-tight">
+          Community <span class="bg-gdgBlue text-white px-2 border-2 border-black -rotate-1 inline-block shadow-brutal-sm">Feed</span>
+        </h1>
+      </div>
+
+      <div class="shrink-0">
+        <div id="postCountBadge" class="bg-black text-white px-4 py-2.5 border-2 border-black font-black uppercase text-xs shadow-brutal-sm">
+          0 Posts
+        </div>
+      </div>
+    </header>
+
+    <div class="grid lg:grid-cols-12 gap-8 items-start">
+      <!-- ── Left: Input Form Card ── -->
+      <section class="lg:col-span-5 bg-white border-4 border-black shadow-brutal p-6 md:p-8 sticky top-6">
+        <div class="flex items-center gap-3 mb-6 pb-4 border-b-4 border-black">
+          <div class="w-10 h-10 bg-gdgYellow border-2 border-black flex items-center justify-center font-black shadow-brutal-sm">
+            <span class="material-symbols-outlined">edit_note</span>
+          </div>
+          <div>
+            <h2 class="font-black text-lg uppercase leading-none">Share a Note</h2>
+            <span class="text-[10px] font-black uppercase text-black/50">Instant &amp; Public</span>
+          </div>
+        </div>
+
+        <form id="commentForm" class="flex flex-col gap-4">
+          <!-- 🛡️ Honeypot Field (Invisible to Humans) -->
+          <div style="position: absolute; opacity: 0; z-index: -50; pointer-events: none; height: 0; width: 0; overflow: hidden;" aria-hidden="true" tabindex="-1">
+            <label for="honeypot_field">Leave this empty</label>
+            <input id="honeypot_field" type="text" name="honeypot" tabindex="-1" autocomplete="off" />
+          </div>
+
+          <!-- Name Input -->
+          <div class="flex flex-col gap-1">
+            <div class="flex items-center justify-between">
+              <label for="authorName" class="text-xs font-black uppercase tracking-wider">
+                Your Name or Alias <span class="text-gdgRed">*</span>
+              </label>
+              <span class="text-[10px] font-bold text-black/40">2–30 chars</span>
+            </div>
+            <input 
+              id="authorName" 
+              type="text" 
+              placeholder="Your Name or Alias" 
+              maxlength="30" 
+              required
+              class="w-full border-2 border-black px-4 py-2.5 text-sm font-bold bg-white focus:outline-none focus:border-gdgBlue transition-all shadow-inner" 
+            />
+          </div>
+
+          <!-- Message Textarea with Live Countdown -->
+          <div class="flex flex-col gap-1">
+            <div class="flex items-center justify-between">
+              <label for="messageText" class="text-xs font-black uppercase tracking-wider">
+                Message <span class="text-gdgRed">*</span>
+              </label>
+              <span id="charCounter" class="text-[11px] font-black px-2 py-0.5 border border-black bg-black/5 text-black/60">
+                300 left
+              </span>
+            </div>
+            <textarea 
+              id="messageText" 
+              rows="4" 
+              maxlength="300" 
+              placeholder="What's on your mind? (No URLs or promotional links allowed)" 
+              required
+              class="w-full border-2 border-black px-4 py-2.5 text-sm font-bold bg-white focus:outline-none focus:border-gdgBlue transition-all resize-none shadow-inner"
+            ></textarea>
+          </div>
+
+          <!-- Anti-URL Warning Banner -->
+          <div class="flex items-center gap-2 bg-gdgYellow/20 border-2 border-black p-2.5 text-[11px] font-bold">
+            <span class="material-symbols-outlined text-gdgRed text-sm shrink-0">shield</span>
+            <span>Links &amp; URLs are blocked to prevent spam.</span>
+          </div>
+
+          <!-- Error Alert Banner -->
+          <div id="errorAlert" class="hidden bg-gdgRed text-white border-2 border-black p-3 text-xs font-black uppercase shadow-brutal-sm flex items-center gap-2">
+            <span class="material-symbols-outlined text-sm">warning</span>
+            <span id="errorMessage"></span>
+          </div>
+
+          <!-- Success Alert Banner -->
+          <div id="successAlert" class="hidden bg-gdgGreen text-white border-2 border-black p-3 text-xs font-black uppercase shadow-brutal-sm flex items-center gap-2">
+            <span class="material-symbols-outlined text-sm">check_circle</span>
+            <span>Note posted live to community feed!</span>
+          </div>
+
+          <!-- Submit Button with Countdown Timer -->
+          <button 
+            id="submitBtn" 
+            type="submit" 
+            class="w-full py-3.5 px-4 bg-gdgBlue text-white font-black uppercase text-sm border-2 border-black shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-brutal-sm active:translate-x-1 active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span class="material-symbols-outlined text-sm">send</span>
+            <span id="submitBtnText">Post Note</span>
+          </button>
+        </form>
+      </section>
+
+      <!-- ── Right: Live Feed Display ── -->
+      <section class="lg:col-span-7 flex flex-col gap-4">
+        <div id="feedList" class="flex flex-col gap-4">
+          <!-- Comments injected dynamically via safe DOM nodes -->
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    // ── Configuration & State ────────────────────────────────────────────────
+    const COOLDOWN_KEY = 'gdg_community_cooldown_until';
+    const COOLDOWN_SEC = 60;
+    const STORAGE_KEY = 'gdg_db_comments';
+
+    // Anti-URL Regular Expression
+    const URL_REGEX = /(?:https?:\/\/|ftp:\/\/|www\.)[^\s/$.?#].[^\s]*|\b[a-zA-Z0-9-]+\.(com|org|net|xyz|io|in|me|co|app|dev|gg|link|top|club|live|info|online|tech|ai|site|ru|cn)\b|(?:t\.me|wa\.me|bit\.ly|tinyurl\.com)\/[^\s]+/i;
+
+    const AVATAR_COLORS = [
+      'bg-gdgBlue text-white',
+      'bg-gdgRed text-white',
+      'bg-gdgYellow text-black',
+      'bg-gdgGreen text-white',
+      'bg-black text-white'
+    ];
+
+    // DOM Elements
+    const form = document.getElementById('commentForm');
+    const authorInput = document.getElementById('authorName');
+    const messageInput = document.getElementById('messageText');
+    const honeypotInput = document.getElementById('honeypot_field');
+    const charCounter = document.getElementById('charCounter');
+    const errorAlert = document.getElementById('errorAlert');
+    const errorMessage = document.getElementById('errorMessage');
+    const successAlert = document.getElementById('successAlert');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const feedList = document.getElementById('feedList');
+    const postCountBadge = document.getElementById('postCountBadge');
+    const refreshBtn = document.getElementById('refreshBtn');
+
+    // ── Relative Timestamp Formatter ─────────────────────────────────────────
+    function formatRelativeTime(isoString) {
+      if (!isoString) return 'just now';
+      const date = new Date(isoString);
+      if (isNaN(date.getTime())) return 'just now';
+      const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
+      if (diffSec < 45) return 'just now';
+      if (diffSec < 3600) {
+        const m = Math.floor(diffSec / 60);
+        return `${m} ${m === 1 ? 'min' : 'mins'} ago`;
+      }
+      if (diffSec < 86400) {
+        const h = Math.floor(diffSec / 3600);
+        return `${h} ${h === 1 ? 'hour' : 'hours'} ago`;
+      }
+      return `${Math.floor(diffSec / 86400)}d ago`;
+    }
+
+    // ── Rate Limiting (60s Cooldown) ─────────────────────────────────────────
+    function getRemainingCooldown() {
+      try {
+        const until = Number(localStorage.getItem(COOLDOWN_KEY) || 0);
+        const diff = Math.ceil((until - Date.now()) / 1000);
+        return diff > 0 ? diff : 0;
+      } catch {
+        return 0;
+      }
+    }
+
+    function updateCooldownUI() {
+      const remaining = getRemainingCooldown();
+      if (remaining > 0) {
+        submitBtn.disabled = true;
+        submitBtnText.textContent = `Wait ${remaining}s to Post`;
+      } else {
+        submitBtn.disabled = false;
+        submitBtnText.textContent = 'Post Note';
+      }
+    }
+
+    setInterval(updateCooldownUI, 1000);
+
+    // ── Live Character Countdown ─────────────────────────────────────────────
+    messageInput.addEventListener('input', () => {
+      const len = messageInput.value.length;
+      const left = 300 - len;
+      charCounter.textContent = `${left} left`;
+      if (left <= 30) {
+        charCounter.className = 'text-[11px] font-black px-2 py-0.5 border border-black bg-gdgYellow text-black';
+      } else {
+        charCounter.className = 'text-[11px] font-black px-2 py-0.5 border border-black bg-black/5 text-black/60';
+      }
+    });
+
+    // ── Load & Render Feed Safely (XSS Immune DOM nodes) ─────────────────────
+    function loadComments() {
+      let comments = [];
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        comments = raw ? JSON.parse(raw) : [];
+      } catch {
+        comments = [];
+      }
+
+      feedList.innerHTML = '';
+      postCountBadge.textContent = `${comments.length} ${comments.length === 1 ? 'Post' : 'Posts'}`;
+
+      if (comments.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'bg-white border-4 border-black p-12 text-center shadow-brutal';
+        empty.innerHTML = `
+          <span class="material-symbols-outlined text-4xl text-black/30 mb-2 block">forum</span>
+          <p class="font-black uppercase text-xs text-black/50 tracking-wider">No notes yet. Be the first to post!</p>
+        `;
+        feedList.appendChild(empty);
+        return;
+      }
+
+      comments.forEach(comment => {
+        const card = document.createElement('article');
+        card.className = 'bg-white border-4 border-black shadow-brutal p-5 flex flex-col gap-3';
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'flex items-center justify-between gap-3';
+
+        const authorWrap = document.createElement('div');
+        authorWrap.className = 'flex items-center gap-3';
+
+        const avatar = document.createElement('div');
+        const colorIdx = (comment.name || '?').charCodeAt(0) % AVATAR_COLORS.length;
+        avatar.className = `w-9 h-9 border-2 border-black flex items-center justify-center font-black text-sm uppercase shadow-brutal-sm ${AVATAR_COLORS[colorIdx]}`;
+        avatar.textContent = (comment.name || '?').charAt(0).toUpperCase();
+
+        const nameTimeWrap = document.createElement('div');
+        const nameEl = document.createElement('span');
+        nameEl.className = 'font-black text-sm uppercase block leading-none';
+        nameEl.textContent = comment.name || 'Anonymous'; // Safe textContent (prevents XSS)
+
+        const timeEl = document.createElement('span');
+        timeEl.className = 'text-[10px] font-bold text-black/40 uppercase tracking-wider block mt-1';
+        timeEl.textContent = formatRelativeTime(comment.createdAt || comment.created_at);
+
+        nameTimeWrap.appendChild(nameEl);
+        nameTimeWrap.appendChild(timeEl);
+        authorWrap.appendChild(avatar);
+        authorWrap.appendChild(nameTimeWrap);
+        header.appendChild(authorWrap);
+
+        // Message Body (XSS-safe text node)
+        const msgEl = document.createElement('p');
+        msgEl.className = 'text-black text-sm font-bold leading-relaxed border-l-4 border-black pl-3 my-1 whitespace-pre-wrap';
+        msgEl.textContent = comment.message; // Safe textContent (prevents XSS)
+
+        // Actions: 1 Like per Person limit
+        let likedIds = [];
+        try { likedIds = JSON.parse(localStorage.getItem('gdg_community_liked_ids') || '[]'); } catch {}
+        const isLiked = likedIds.some(id => String(id) === String(comment.id));
+
+        const footer = document.createElement('div');
+        footer.className = 'flex items-center justify-between pt-2 border-t-2 border-black/10';
+
+        const likeBtn = document.createElement('button');
+        likeBtn.className = `flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase border-2 border-black transition-all cursor-pointer ${
+          isLiked 
+            ? 'bg-gdgBlue text-white shadow-none translate-x-0.5 translate-y-0.5' 
+            : 'bg-white text-black shadow-brutal-sm hover:bg-gdgYellow'
+        }`;
+        likeBtn.title = isLiked ? 'Unlike note' : 'Like note (1 per person)';
+        likeBtn.innerHTML = `
+          <span class="material-symbols-outlined text-sm ${isLiked ? 'text-white' : 'text-gdgBlue'}">thumb_up</span>
+          <span>${comment.likes || 0}</span>
+          ${isLiked ? '<span class="text-[10px] ml-1">• Liked</span>' : ''}
+        `;
+
+        likeBtn.addEventListener('click', () => {
+          let currentLiked = [];
+          try { currentLiked = JSON.parse(localStorage.getItem('gdg_community_liked_ids') || '[]'); } catch {}
+          const already = currentLiked.some(id => String(id) === String(comment.id));
+          const updated = already 
+            ? currentLiked.filter(id => String(id) !== String(comment.id))
+            : [...currentLiked, comment.id];
+          localStorage.setItem('gdg_community_liked_ids', JSON.stringify(updated));
+
+          comment.likes = already ? Math.max(0, (comment.likes || 1) - 1) : (comment.likes || 0) + 1;
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const list = JSON.parse(raw).map(c => String(c.id) === String(comment.id) ? { ...c, likes: comment.likes } : c);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+          }
+          loadComments();
+        });
+
+        footer.appendChild(likeBtn);
+        const tag = document.createElement('span');
+        tag.className = 'text-[10px] font-bold text-black/30 uppercase tracking-widest';
+        tag.textContent = 'GDG Note';
+        footer.appendChild(tag);
+
+        card.appendChild(header);
+        card.appendChild(msgEl);
+        card.appendChild(footer);
+        feedList.appendChild(card);
+      });
+    }
+
+    // ── Form Submit Handler ──────────────────────────────────────────────────
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      errorAlert.classList.add('hidden');
+      successAlert.classList.add('hidden');
+
+      // 1. Honeypot Check (Bot Trap)
+      if (honeypotInput.value.trim() !== '') {
+        console.warn('Honeypot triggered by bot.');
+        successAlert.classList.remove('hidden');
+        form.reset();
+        return;
+      }
+
+      // 2. Client-side Rate Limit Check
+      const cooldown = getRemainingCooldown();
+      if (cooldown > 0) {
+        showError(`Cooldown active: Please wait ${cooldown}s before posting again.`);
+        return;
+      }
+
+      // 3. String Sanitization
+      const name = authorInput.value.replace(/<[^>]*>?/gm, '').trim();
+      const message = messageInput.value.replace(/<[^>]*>?/gm, '').trim();
+
+      // 4. Length Validation
+      if (name.length < 2 || name.length > 30) {
+        showError('Name must be between 2 and 30 characters.');
+        return;
+      }
+
+      if (message.length < 5 || message.length > 300) {
+        showError('Message must be between 5 and 300 characters.');
+        return;
+      }
+
+      // 5. Anti-URL Rule
+      if (URL_REGEX.test(name) || URL_REGEX.test(message)) {
+        showError('🚫 Links and URLs are blocked to prevent spam.');
+        return;
+      }
+
+      // 6. Save comment
+      const newComment = {
+        id: Date.now(),
+        name,
+        message,
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const list = raw ? JSON.parse(raw) : [];
+        list.unshift(newComment);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      } catch (err) {
+        console.error(err);
+      }
+
+      // 7. Set 60-second cooldown
+      localStorage.setItem(COOLDOWN_KEY, String(Date.now() + COOLDOWN_SEC * 1000));
+      updateCooldownUI();
+
+      // 8. Success Feedback
+      successAlert.classList.remove('hidden');
+      form.reset();
+      charCounter.textContent = '300 left';
+      loadComments();
+
+      setTimeout(() => {
+        successAlert.classList.add('hidden');
+      }, 4000);
+    });
+
+    function showError(msg) {
+      errorMessage.textContent = msg;
+      errorAlert.classList.remove('hidden');
+    }
+
+    // Automatic refresh every 5 seconds
+    setInterval(loadComments, 5000);
+
+    // Initial load
+    updateCooldownUI();
+    loadComments();
+  </script>
+</body>
+</html>

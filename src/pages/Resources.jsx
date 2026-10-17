@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { dbFetch, dbInsert, dbUpdate, dbDelete, subscribeToTable, sortEventsByDate } from '../lib/db'
+import CommunityFeed from '../components/CommunityFeed'
 
 // ─── Event Resources Data ─────────────────────────────────────────────────────
 const eventResources = [
@@ -156,18 +157,6 @@ const eventResources = [
   },
 ]
 
-// ─── Comment Helpers ──────────────────────────────────────────────────────────
-const avatarColors = ['bg-primary', 'bg-danger', 'bg-warning', 'bg-success']
-const getAvatarColor = (name) =>
-  avatarColors[name.charCodeAt(0) % avatarColors.length]
-
-const timeAgo = (iso) => {
-  const diff = (Date.now() - new Date(iso)) / 1000
-  if (diff < 60) return 'just now'
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
-  return `${Math.floor(diff / 86400)}d ago`
-}
 
 // ─── ResourceCard ─────────────────────────────────────────────────────────────
 const ResourceCard = ({ event, index }) => (
@@ -230,269 +219,9 @@ const ResourceCard = ({ event, index }) => (
 )
 
 // ─── Community Section ────────────────────────────────────────────────────────
-const CommunitySection = () => {
-  const [comments, setComments] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [name, setName] = useState('')
-  const [eventRef, setEventRef] = useState('')
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-  const [filter, setFilter] = useState('All')
-
-  const load = useCallback(async () => {
-    const { data } = await dbFetch('comments', 'created_at', false)
-    if (data) {
-      setComments(data)
-    }
-    setLoading(false)
-  }, [])
-
-  useEffect(() => {
-    load()
-    // 1. Live Realtime updates across devices
-    const unsubscribe = subscribeToTable('comments', () => {
-      load()
-    })
-    // 2. Fallback polling every 8s in case websockets are interrupted
-    const interval = setInterval(load, 8000)
-    return () => {
-      clearInterval(interval)
-      unsubscribe()
-    }
-  }, [load])
-
-  const allFilters = ['All', ...eventResources.map((e) => e.title), 'General']
-  const filteredComments =
-    filter === 'All' ? comments : comments.filter((c) => c.eventRef === filter || c.event_ref === filter)
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!name.trim() || !message.trim()) {
-      setError('Please fill in your name and message.')
-      return
-    }
-    setError('')
-    setSubmitting(true)
-
-    const newComment = {
-      name: name.trim(),
-      eventRef: eventRef || 'General',
-      event_ref: eventRef || 'General',
-      message: message.trim(),
-      likes: 0,
-      created_at: new Date().toISOString()
-    }
-
-    const { error: insertErr } = await dbInsert('comments', newComment)
-    setSubmitting(false)
-
-    if (insertErr) {
-      setError('Could not post comment. Please try again.')
-      return
-    }
-
-    setName('')
-    setEventRef('')
-    setMessage('')
-    setSubmitted(true)
-    setTimeout(() => setSubmitted(false), 3000)
-    load()
-  }
-
-  const handleLike = async (id) => {
-    const target = comments.find((c) => c.id === id)
-    if (!target) return
-    const newLikes = (target.likes || 0) + 1
-    // Optimistic UI update
-    setComments((prev) => prev.map((c) => (c.id === id ? { ...c, likes: newLikes } : c)))
-    await dbUpdate('comments', id, { likes: newLikes })
-  }
-
-  const handleDelete = async (id) => {
-    if (!confirm('Delete this comment?')) return
-    setComments((prev) => prev.filter((c) => c.id !== id))
-    await dbDelete('comments', id)
-    load()
-  }
-
-  return (
-    <section id="community" className="mt-24 md:mt-32 scroll-mt-28">
-      {/* Header */}
-      <div className="mb-10 md:mb-14 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <div className="bg-success border-4 border-black px-4 py-2 shadow-brutal inline-block -rotate-1 mb-4">
-            <h2 className="text-3xl md:text-5xl font-headline font-black text-white uppercase tracking-tight m-0">
-              Community
-            </h2>
-          </div>
-          <p className="text-black font-bold text-base md:text-lg max-w-xl mt-2">
-            Share your experience, ask questions, or connect with peers live across the GDG community!
-          </p>
-        </div>
-        <div className="bg-black text-white px-5 py-3 border-2 border-black font-black uppercase tracking-widest text-sm shadow-brutal-sm shrink-0">
-          {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
-        </div>
-      </div>
-
-      <div className="grid lg:grid-cols-5 gap-8 md:gap-12">
-        {/* ── Form ── */}
-        <div className="lg:col-span-2">
-          <div className="bg-white border-4 border-black shadow-brutal p-6 md:p-8 sticky top-28">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b-4 border-black">
-              <div className="w-10 h-10 bg-primary border-2 border-black flex items-center justify-center shadow-brutal-sm">
-                <span className="material-symbols-outlined text-white text-xl">edit</span>
-              </div>
-              <h3 className="font-headline font-black text-black text-xl uppercase">Leave a Note</h3>
-            </div>
-
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-black uppercase tracking-widest text-black">Your Name *</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Priya Sharma"
-                  maxLength={40}
-                  className="w-full border-2 border-black px-4 py-3 text-sm font-bold text-black bg-white focus:outline-none focus:border-primary transition-all placeholder:text-black/30"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-black uppercase tracking-widest text-black">Related Event</label>
-                <select
-                  value={eventRef}
-                  onChange={(e) => setEventRef(e.target.value)}
-                  className="w-full border-2 border-black px-4 py-3 text-sm font-bold text-black bg-white focus:outline-none focus:border-primary transition-all cursor-pointer"
-                >
-                  <option value="">General / No specific event</option>
-                  {eventResources.map((ev) => (
-                    <option key={ev.id} value={ev.title}>{ev.title}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-black uppercase tracking-widest text-black">Message *</label>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Share your thoughts, feedback, or a helpful link..."
-                  rows={5}
-                  maxLength={500}
-                  className="w-full border-2 border-black px-4 py-3 text-sm font-bold text-black bg-white focus:outline-none focus:border-primary transition-all resize-none placeholder:text-black/30"
-                />
-                <span className="text-xs text-black/40 font-bold self-end">{message.length}/500</span>
-              </div>
-
-              {error && (
-                <div className="bg-danger text-white border-2 border-black px-4 py-2 text-xs font-black uppercase shadow-brutal-sm">
-                  {error}
-                </div>
-              )}
-
-              <AnimatePresence>
-                {submitted && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="bg-success text-white border-2 border-black px-4 py-2 text-xs font-black uppercase shadow-brutal-sm"
-                  >
-                    ✓ Posted! Thanks for sharing.
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full bg-primary text-white py-4 font-black uppercase tracking-wider text-sm border-2 border-black shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-brutal-sm active:translate-x-1 active:translate-y-1 active:shadow-none transition-all disabled:opacity-50 cursor-pointer"
-              >
-                {submitting ? 'Posting...' : 'Post Comment'}
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {/* ── Feed ── */}
-        <div className="lg:col-span-3 flex flex-col gap-6">
-          {/* Filter chips */}
-          <div className="flex flex-wrap gap-2 pb-4 border-b-4 border-black">
-            {allFilters.map((tag) => (
-              <button
-                key={tag}
-                onClick={() => setFilter(tag)}
-                className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border-2 border-black transition-all ${
-                  filter === tag
-                    ? 'bg-black text-white shadow-none translate-x-0.5 translate-y-0.5'
-                    : 'bg-white text-black shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none'
-                }`}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-
-          {filteredComments.length === 0 ? (
-            <div className="bg-white border-4 border-black p-16 text-center shadow-brutal">
-              <span className="material-symbols-outlined text-5xl text-black/20 mb-3 block">forum</span>
-              <p className="font-black uppercase text-black/40 text-sm">
-                {filter === 'All' ? 'No comments yet. Be the first!' : `No comments for "${filter}" yet.`}
-              </p>
-            </div>
-          ) : (
-            <AnimatePresence>
-              {filteredComments.map((c) => (
-                <motion.div
-                  key={c.id}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-white border-4 border-black shadow-brutal p-5 md:p-6 flex flex-col gap-4"
-                >
-                  {/* Comment header */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 border-2 border-black ${getAvatarColor(c.name)} flex items-center justify-center shadow-brutal-sm shrink-0`}>
-                        <span className="font-black text-white text-sm uppercase">{c.name.charAt(0)}</span>
-                      </div>
-                      <div>
-                        <span className="block font-black text-black text-sm uppercase">{c.name}</span>
-                        {c.eventRef && c.eventRef !== 'General' && (
-                          <span className="text-[10px] font-bold text-black/50 uppercase tracking-wide">re: {c.eventRef}</span>
-                        )}
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-black/40 uppercase tracking-widest">{timeAgo(c.timestamp)}</span>
-                  </div>
-
-                  {/* Message */}
-                  <p className="text-black text-sm font-bold leading-relaxed border-l-4 border-black pl-4">
-                    {c.message}
-                  </p>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-3 pt-2 border-t-2 border-black">
-                    <button
-                      onClick={() => handleLike(c.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white border-2 border-black text-xs font-black uppercase shadow-brutal-sm hover:bg-warning hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
-                    >
-                      <span className="material-symbols-outlined text-sm">thumb_up</span>
-                      {c.likes || 0}
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          )}
-        </div>
-      </div>
-    </section>
-  )
+const CommunitySection = ({ events = [] }) => {
+  const eventTitles = (events && events.length > 0 ? events : eventResources).map((e) => e.title)
+  return <CommunityFeed eventFilterList={eventTitles} />
 }
 
 // ─── Main Resources Page ──────────────────────────────────────────────────────
@@ -669,7 +398,7 @@ const Resources = () => {
         </section>
 
         {/* Community */}
-        <CommunitySection />
+        <CommunitySection events={allEvents} />
 
       </main>
     </div>
