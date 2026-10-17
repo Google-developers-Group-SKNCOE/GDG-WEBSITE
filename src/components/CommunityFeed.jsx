@@ -101,7 +101,6 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
   const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [activeFilter, setActiveFilter] = useState('All')
-  const [sortBy, setSortBy] = useState('newest') // 'newest' | 'top'
   const [showGuidelines, setShowGuidelines] = useState(false)
 
   // Rate Limiting (60s cooldown countdown)
@@ -385,28 +384,17 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
   }, [comments, eventFilterList])
 
   const filteredAndSortedPosts = useMemo(() => {
-    let list = activeFilter === 'All'
+    const list = activeFilter === 'All'
       ? topLevelPosts
       : topLevelPosts.filter(
           (c) => (c.event_ref || c.eventRef || 'General') === activeFilter
         )
 
-    if (sortBy === 'top') {
-      // Sort by engagement: Likes + Replies count
-      list = [...list].sort((a, b) => {
-        const scoreA = (Number(a.likes) || 0) + (repliesByParent[a.id]?.length || 0) * 2
-        const scoreB = (Number(b.likes) || 0) + (repliesByParent[b.id]?.length || 0) * 2
-        return scoreB - scoreA
-      })
-    } else {
-      // Chronological newest first
-      list = [...list].sort(
-        (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
-      )
-    }
-
-    return list
-  }, [topLevelPosts, activeFilter, sortBy, repliesByParent])
+    // Automatically sort chronologically (newest posts and updates at the top)
+    return [...list].sort(
+      (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
+    )
+  }, [topLevelPosts, activeFilter])
 
   // Character countdown
   const charsLeft = 300 - message.length
@@ -696,53 +684,24 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
 
         {/* ── Column 2: Live Feed Display & Sorting (7 Cols) ── */}
         <div className="lg:col-span-7 flex flex-col gap-6">
-          {/* Controls: Filter chips + Sort toggle */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b-2 border-black/10">
-            {/* Filter Chips */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] font-black uppercase text-black/50 tracking-wider mr-1">
-                Filter:
-              </span>
-              {filterOptions.map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setActiveFilter(filter)}
-                  className={`px-2.5 py-1 text-[10px] md:text-xs font-black uppercase tracking-wider border-2 border-black transition-all cursor-pointer ${
-                    activeFilter === filter
-                      ? 'bg-black text-white shadow-none translate-x-0.5 translate-y-0.5'
-                      : 'bg-white text-black shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none'
-                  }`}
-                >
-                  {filter}
-                </button>
-              ))}
-            </div>
-
-            {/* Smart Sort (Newest vs Top/Hot) */}
-            <div className="flex items-center gap-1 bg-surface-dark border-2 border-black p-1 shadow-brutal-sm self-start sm:self-auto shrink-0">
+          {/* Filter Chips Bar */}
+          <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b-2 border-black/10">
+            <span className="text-[10px] font-black uppercase text-black/50 tracking-wider mr-1">
+              Filter:
+            </span>
+            {filterOptions.map((filter) => (
               <button
-                onClick={() => setSortBy('newest')}
-                className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer ${
-                  sortBy === 'newest'
-                    ? 'bg-[#4285F4] text-white border border-black shadow-brutal-sm'
-                    : 'text-black hover:text-[#4285F4]'
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className={`px-2.5 py-1 text-[10px] md:text-xs font-black uppercase tracking-wider border-2 border-black transition-all cursor-pointer ${
+                  activeFilter === filter
+                    ? 'bg-black text-white shadow-none translate-x-0.5 translate-y-0.5'
+                    : 'bg-white text-black shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none'
                 }`}
               >
-                <span className="material-symbols-outlined text-xs">schedule</span>
-                <span>Newest</span>
+                {filter}
               </button>
-              <button
-                onClick={() => setSortBy('top')}
-                className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer ${
-                  sortBy === 'top'
-                    ? 'bg-[#FBBC04] text-black border border-black shadow-brutal-sm'
-                    : 'text-black hover:text-[#FBBC04]'
-                }`}
-              >
-                <span className="material-symbols-outlined text-xs">local_fire_department</span>
-                <span>Top / Hot</span>
-              </button>
-            </div>
+            ))}
           </div>
 
           {/* Loading Skeleton */}
