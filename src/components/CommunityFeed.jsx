@@ -103,6 +103,12 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
   const [activeFilter, setActiveFilter] = useState('All')
   const [showGuidelines, setShowGuidelines] = useState(false)
 
+  useEffect(() => {
+    if (activeEvent) {
+      setActiveFilter(activeEvent.title || 'All')
+    }
+  }, [activeEvent])
+
   // Rate Limiting (60s cooldown countdown)
   const [cooldownRemaining, setCooldownRemaining] = useState(0)
 
@@ -183,7 +189,7 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
 
   useEffect(() => {
     if (activeEvent) {
-      setEventRef(activeEvent)
+      setEventRef(activeEvent.title || '')
     }
   }, [activeEvent])
 
@@ -232,6 +238,7 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
       message: cleanMsg,
       event_ref: eventRef ? eventRef.trim() : 'General',
       eventRef: eventRef ? eventRef.trim() : 'General',
+      parent_comment_id: null,
       likes: 0,
       is_deleted: false,
       created_at: new Date().toISOString(),
@@ -301,6 +308,7 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
       message: formattedReplyMessage,
       event_ref: parentComment.event_ref || parentComment.eventRef || 'General',
       eventRef: parentComment.event_ref || parentComment.eventRef || 'General',
+      parent_comment_id: String(parentComment.id),
       likes: 0,
       is_deleted: false,
       created_at: new Date().toISOString(),
@@ -356,11 +364,12 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
 
     comments.forEach((c) => {
       const parsed = parseCommentMessage(c.message)
-      if (parsed.isReply && parsed.replyToId) {
-        if (!repliesMap[parsed.replyToId]) {
-          repliesMap[parsed.replyToId] = []
+      const parentId = c.parent_comment_id || parsed.replyToId || null
+      if (parentId) {
+        if (!repliesMap[parentId]) {
+          repliesMap[parentId] = []
         }
-        repliesMap[parsed.replyToId].push({ ...c, parsedMessage: parsed })
+        repliesMap[parentId].push({ ...c, parsedMessage: parsed })
       } else {
         topPosts.push({ ...c, parsedMessage: parsed })
       }
@@ -781,30 +790,6 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
                       {/* Actions Bar: Like + Direct Reply Toggle */}
                       <div className="flex items-center justify-between pt-2 border-t-2 border-black/10">
                         <div className="flex items-center gap-2">
-                          {/* Upvote / Like Button (1 like limit with toggle) */}
-                          <button
-                            onClick={() => handleLike(post)}
-                            title={isPostLiked ? 'Unlike note' : 'Upvote note (1 per person)'}
-                            className={`flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase border-2 border-black transition-all cursor-pointer ${
-                              isPostLiked
-                                ? 'bg-[#4285F4] text-white shadow-none translate-x-0.5 translate-y-0.5'
-                                : 'bg-white text-black shadow-brutal-sm hover:bg-[#FBBC04] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none'
-                            }`}
-                          >
-                            <span
-                              className={`material-symbols-outlined text-sm ${
-                                isPostLiked ? 'text-white' : 'text-[#4285F4]'
-                              }`}
-                              style={{ fontVariationSettings: isPostLiked ? "'FILL' 1" : "'FILL' 0" }}
-                            >
-                              thumb_up
-                            </span>
-                            <span>{post.likes || 0}</span>
-                            {isPostLiked && (
-                              <span className="text-[10px] font-bold uppercase ml-0.5 opacity-90">• Liked</span>
-                            )}
-                          </button>
-
                           {/* Reply Button */}
                           <button
                             onClick={() => {
@@ -935,23 +920,6 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
                                     </span>
                                   </div>
 
-                                  {/* Like Reply Button */}
-                                  <button
-                                    onClick={() => handleLike(reply)}
-                                    className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase border border-black cursor-pointer ${
-                                      isReplyLiked
-                                        ? 'bg-[#4285F4] text-white'
-                                        : 'bg-white text-black hover:bg-[#FBBC04]'
-                                    }`}
-                                  >
-                                    <span
-                                      className="material-symbols-outlined text-xs"
-                                      style={{ fontVariationSettings: isReplyLiked ? "'FILL' 1" : "'FILL' 0" }}
-                                    >
-                                      thumb_up
-                                    </span>
-                                    <span>{reply.likes || 0}</span>
-                                  </button>
                                 </div>
 
                                 <p className="text-black text-xs font-bold leading-relaxed whitespace-pre-wrap pl-2 border-l-2 border-[#4285F4]/40">

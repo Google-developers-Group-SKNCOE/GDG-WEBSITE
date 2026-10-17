@@ -824,6 +824,10 @@ export const dbInsert = async (table, row) => {
     created_at: new Date().toISOString()
   }
 
+  if (table === 'comments' && !newRow.id) {
+    newRow.id = `comment_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+  }
+
   // Only assign string ID if the table is NOT events, resources, or comments (use auto-increment in Supabase)
   if (table !== 'events' && table !== 'resources' && table !== 'comments') {
     if (!newRow.id) {
@@ -866,6 +870,7 @@ export const dbInsert = async (table, row) => {
           name: newRow.name || 'Anonymous',
           event_ref: newRow.event_ref || newRow.eventRef || 'General',
           message: newRow.message || '',
+          parent_comment_id: newRow.parent_comment_id ?? null,
           likes: Number(newRow.likes) || 0,
           is_deleted: false,
           created_at: newRow.created_at || new Date().toISOString()
@@ -941,6 +946,7 @@ export const dbUpdate = async (table, id, row) => {
         if (updateData.likes !== undefined) updateObj.likes = Number(updateData.likes)
         if (updateData.message !== undefined) updateObj.message = updateData.message
         if (updateData.name !== undefined) updateObj.name = updateData.name
+        if (updateData.parent_comment_id !== undefined) updateObj.parent_comment_id = updateData.parent_comment_id
         if (updateData.is_deleted !== undefined) updateObj.is_deleted = updateData.is_deleted
         updateData = updateObj
       }

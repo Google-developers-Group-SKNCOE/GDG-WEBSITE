@@ -159,13 +159,23 @@ const eventResources = [
 
 
 // ─── ResourceCard ─────────────────────────────────────────────────────────────
-const ResourceCard = ({ event, index }) => (
+const ResourceCard = ({ event, index, onSelect }) => (
   <motion.article
     initial={{ opacity: 0, y: 30 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
     transition={{ duration: 0.4, delay: index * 0.07 }}
-    className="bg-white border-4 border-black shadow-brutal hover:shadow-brutal-lg hover:-translate-y-1 transition-all flex flex-col"
+    onClick={() => onSelect(event)}
+    onKeyDown={(e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        onSelect(event)
+      }
+    }}
+    tabIndex={0}
+    role="button"
+    aria-label={`Open ${event.title}`}
+    className="bg-white border-4 border-black shadow-brutal hover:shadow-brutal-lg hover:-translate-y-1 transition-all flex flex-col cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-primary"
   >
     {/* Header */}
     <div className={`${event.color} p-5 border-b-4 border-black flex items-start justify-between gap-3`}>
@@ -204,9 +214,15 @@ const ResourceCard = ({ event, index }) => (
         {(event.resources || []).map((r, i) => (
           <a
             key={i}
-            href={r.url}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={r.url || '#'}
+            target={r.url && r.url !== '#' ? '_blank' : undefined}
+            rel={r.url && r.url !== '#' ? 'noopener noreferrer' : undefined}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (!r.url || r.url === '#') {
+                e.preventDefault()
+              }
+            }}
             className="flex items-center gap-1.5 px-4 py-2 bg-white border-2 border-black text-black text-xs font-black uppercase shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-brutal-sm transition-all"
           >
             <span className="material-symbols-outlined text-sm">{r.icon || 'link'}</span>
@@ -219,9 +235,9 @@ const ResourceCard = ({ event, index }) => (
 )
 
 // ─── Community Section ────────────────────────────────────────────────────────
-const CommunitySection = ({ events = [] }) => {
+const CommunitySection = ({ events = [], activeEvent = null }) => {
   const eventTitles = (events && events.length > 0 ? events : eventResources).map((e) => e.title)
-  return <CommunityFeed eventFilterList={eventTitles} />
+  return <CommunityFeed eventFilterList={eventTitles} activeEvent={activeEvent} />
 }
 
 // ─── Main Resources Page ──────────────────────────────────────────────────────
@@ -229,6 +245,7 @@ const Resources = () => {
   const [allEvents, setAllEvents] = useState(() => sortEventsByDate(eventResources, true))
   const [search, setSearch] = useState('')
   const [activeType, setActiveType] = useState('All')
+  const [selectedEvent, setSelectedEvent] = useState(null)
 
   useEffect(() => {
     const fetchDb = async () => {
@@ -383,22 +400,93 @@ const Resources = () => {
 
         {/* Cards Grid */}
         <section>
-          {filtered.length === 0 ? (
-            <div className="bg-white border-4 border-black p-16 text-center shadow-brutal">
-              <span className="material-symbols-outlined text-5xl text-black/20 mb-3 block">search_off</span>
-              <p className="font-black uppercase text-black/40">No events match your search.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
-              {filtered.map((event, idx) => (
-                <ResourceCard key={event.id} event={event} index={idx} />
-              ))}
-            </div>
-          )}
-        </section>
+          {selectedEvent ? (
+                <div className="mb-10 rounded-none border-4 border-black bg-white shadow-brutal overflow-hidden">
+                  <div className={`${selectedEvent.color || 'bg-primary'} border-b-4 border-black p-5 md:p-6`}>
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-12 h-12 bg-white border-2 border-black flex items-center justify-center shadow-brutal-sm shrink-0">
+                          <span className="material-symbols-outlined text-black text-2xl">{selectedEvent.icon || 'event'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-[10px] font-black uppercase tracking-widest text-white/80">{selectedEvent.type}</span>
+                          <h3 className="font-headline font-black text-white text-2xl md:text-3xl uppercase leading-tight">{selectedEvent.title}</h3>
+                        </div>
+                      </div>
 
-        {/* Community */}
-        <CommunitySection events={allEvents} />
+                      <button
+                        type="button"
+                        onClick={() => setSelectedEvent(null)}
+                        className="bg-white text-black border-2 border-black px-3 py-2 text-[10px] font-black uppercase shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5"
+                      >
+                        Close Post
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-5 md:p-7">
+                    <div className="mb-6 flex items-center gap-3 text-xs font-black uppercase tracking-widest text-black/70">
+                      <span>{selectedEvent.date}</span>
+                      <span className="inline-block w-2 h-2 rounded-full bg-black" />
+                      <span>{(selectedEvent.resources || []).length} Resources</span>
+                    </div>
+
+                    <p className="text-base md:text-lg font-bold leading-relaxed text-black mb-6">
+                      {selectedEvent.description}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {(selectedEvent.tags || []).map((tag) => (
+                        <span key={tag} className="px-3 py-1 bg-surface-dark border-2 border-black text-black text-[10px] font-black uppercase shadow-brutal-sm">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="mb-8">
+                      <h4 className="font-headline font-black text-xl uppercase text-black mb-4">Resources</h4>
+                      <div className="flex flex-wrap gap-3">
+                        {(selectedEvent.resources || []).map((r, i) => (
+                          <a
+                            key={`${r.label}-${i}`}
+                            href={r.url || '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-black text-black text-xs font-black uppercase shadow-brutal hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-brutal-sm transition-all"
+                          >
+                            <span className="material-symbols-outlined text-sm">{r.icon || 'link'}</span>
+                            {r.label}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="border-t-4 border-black pt-6">
+                      <div className="flex items-center justify-between gap-3 mb-4">
+                        <h4 className="font-headline font-black text-xl uppercase text-black">Comments</h4>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-black/60">
+                          Dedicated discussion
+                        </span>
+                      </div>
+                      <CommunitySection events={[selectedEvent]} activeEvent={selectedEvent} />
+                    </div>
+                  </div>
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="bg-white border-4 border-black p-16 text-center shadow-brutal">
+                  <span className="material-symbols-outlined text-5xl text-black/20 mb-3 block">search_off</span>
+                  <p className="font-black uppercase text-black/40">No events match your search.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
+                  {filtered.map((event, idx) => (
+                    <ResourceCard key={event.id} event={event} index={idx} onSelect={setSelectedEvent} />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {!selectedEvent && <CommunitySection events={allEvents} />}
 
       </main>
     </div>
