@@ -1,56 +1,47 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { useContent } from '../context/ContentContext'
 
-const domains = [
-  { icon: 'html', title: 'Web Development', classColor: 'text-primary' },
-  { icon: 'smartphone', title: 'App Development', classColor: 'text-success' },
-  { icon: 'cloud', title: 'Cloud Computing', classColor: 'text-primary' },
-  { icon: 'shield', title: 'Cybersecurity', classColor: 'text-danger' },
-  { icon: 'terminal', title: 'Comp. Programming', classColor: 'text-black' },
-  { icon: 'palette', title: 'UI/UX Design', classColor: 'text-danger' },
-  { icon: 'alternate_email', title: 'Social media', classColor: 'text-warning' },
-  { icon: 'calendar_today', title: 'Events Ops', classColor: 'text-primary' },
-  { icon: 'diversity_2', title: 'WIT Community', classColor: 'text-warning' },
-  { icon: 'psychology', title: 'AI / ML', classColor: 'text-success' },
-  { icon: '💰', title: 'Sponsorship', classColor: 'text-black', isEmoji: true },
-  { icon: '😊', title: 'Wanna Join Us ?', classColor: 'text-primary', isEmoji: true }
-]
-
-const partners = [
-  "/sponsors/WhatsApp Image 2026-05-01 at 3.07.58 PM.jpeg",
-  "/sponsors/WhatsApp Image 2026-05-01 at 3.09.10 PM.jpeg",
-  "/sponsors/WhatsApp Image 2026-05-01 at 3.10.14 PM.jpeg",
-  "/sponsors/WhatsApp Image 2026-05-01 at 3.11.00 PM.jpeg",
-  "/sponsors/WhatsApp Image 2026-05-01 at 3.12.41 PM.jpeg",
-  "/sponsors/imresizer-Soli.jpeg"
-]
+const getColorMap = (icon) => {
+  const map = {
+    html: 'text-primary', smartphone: 'text-success', cloud: 'text-primary',
+    shield: 'text-danger', terminal: 'text-black', palette: 'text-danger',
+    alternate_email: 'text-warning', calendar_today: 'text-primary',
+    diversity_2: 'text-warning', psychology: 'text-success',
+  }
+  return map[icon] || 'text-primary'
+}
 
 const Home = () => {
+  const { content } = useContent()
+  const { hero, about, domains, sponsors, faqs, contact } = content
+
   return (
     <main className="relative pt-24 md:pt-32 space-y-24 md:space-y-40 grid-paper min-h-screen border-x-0 md:border-x-4 border-black max-w-screen-2xl mx-auto overflow-hidden">
 
       {/* Hero Section */}
       <section className="px-6 max-w-full mx-auto">
         <div className="relative w-full pt-8 pb-8 md:pt-16 md:pb-12 flex flex-col items-center text-center">
-
           <h1 className="text-5xl sm:text-6xl lg:text-8xl font-headline font-black text-black leading-[1.1] md:leading-none mb-8 max-w-4xl tracking-tighter uppercase break-words">
-            Empowering <br className="hidden sm:block" />
-            <span className="text-white bg-primary px-3 md:px-4 border-2 md:border-4 border-black inline-block mt-4 shadow-brutal -rotate-2 transform">Innovators</span>
+            {hero?.headline?.split('\n')[0] || 'Empowering'} <br className="hidden sm:block" />
+            <span className="text-white bg-primary px-3 md:px-4 border-2 md:border-4 border-black inline-block mt-4 shadow-brutal -rotate-2 transform">
+              {hero?.headline?.split('\n')[1] || 'Innovators'}
+            </span>
           </h1>
           <p className="text-base md:text-lg text-black mb-10 md:mb-12 max-w-2xl mx-auto leading-relaxed font-bold bg-white p-4 border-2 border-black shadow-brutal-sm relative z-10">
-            Google Developer Groups On-Campus at SKNCOE is where technical excellence meets collaborative spirit. Join 500+ students building the future.
+            {hero?.subtitle || 'Google Developer Groups On-Campus at SKNCOE is where technical excellence meets collaborative spirit. Join 500+ students building the future.'}
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4 md:gap-6 mt-4 w-full sm:w-auto px-4 sm:px-0">
             <Link to="/events" className="bg-primary text-white px-8 md:px-10 py-4 md:py-5 rounded-none text-lg md:text-xl brutal-btn w-full sm:w-auto">
-              Explore Events
+              {hero?.cta_primary_label || 'Explore Events'}
             </Link>
-            <a 
-              href="https://qubit-live.vercel.app/" 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href={hero?.cta_primary_url || 'https://qubit-live.vercel.app/'}
+              target="_blank"
+              rel="noopener noreferrer"
               className="bg-white text-black px-8 md:px-10 py-4 md:py-5 rounded-none text-lg md:text-xl brutal-btn flex items-center justify-center w-full sm:w-auto"
             >
-              Qubit For Quiz ❤️
+              {hero?.cta_secondary_label || 'Qubit For Quiz'}
             </a>
           </div>
         </div>
@@ -59,38 +50,23 @@ const Home = () => {
       {/* Vision & Ethics */}
       <section className="px-6 max-w-7xl mx-auto">
         <div className="grid md:grid-cols-2 gap-12 md:gap-10">
-          <motion.div
-            className="bg-white p-8 md:p-14 brutal-card rounded-none relative"
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="absolute -top-4 -left-4 w-10 h-10 md:w-12 md:h-12 bg-warning border-2 border-black shadow-brutal-sm flex items-center justify-center">
-              <span className="material-symbols-outlined text-black font-black text-xl md:text-2xl">visibility</span>
-            </div>
-            <h2 className="text-2xl md:text-3xl font-headline font-black text-black mb-4 md:mb-5 tracking-tight uppercase">Our Mission</h2>
-            <div className="w-12 md:w-16 h-2 bg-black mb-6"></div>
-            <p className="text-sm md:text-base text-black font-bold leading-relaxed">
-              To bridge the gap between academic theory and industry practice. We provide SKNCOE developers with access to Google's cutting-edge technologies, fostering an environment where curiosity thrives and real-world impact is the benchmark.
-            </p>
-          </motion.div>
-          <motion.div
-            className="bg-white p-8 md:p-14 brutal-card rounded-none relative"
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <div className="absolute -top-4 -left-4 w-10 h-10 md:w-12 md:h-12 bg-success border-2 border-black shadow-brutal-sm flex items-center justify-center">
-              <span className="material-symbols-outlined text-black font-black text-xl md:text-2xl">auto_awesome</span>
-            </div>
-            <h2 className="text-2xl md:text-3xl font-headline font-black text-black mb-4 md:mb-5 tracking-tight uppercase">Core Principles</h2>
-            <div className="w-12 md:w-16 h-2 bg-black mb-6"></div>
-            <p className="text-sm md:text-base text-black font-bold leading-relaxed">
-              We value radically open collaboration. Our community is built on the belief that technology should be accessible, inclusive, and built ethically. We don't just write code; we cultivate a culture of shared growth and mentorship.
-            </p>
-          </motion.div>
+          {about.map((item, idx) => (
+            <motion.div
+              key={item.id}
+              className="bg-white p-8 md:p-14 brutal-card rounded-none relative"
+              initial={{ opacity: 0, x: idx % 2 === 0 ? -50 : 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: idx * 0.1 }}
+            >
+              <div className="absolute -top-4 -left-4 w-10 h-10 md:w-12 md:h-12 bg-warning border-2 border-black shadow-brutal-sm flex items-center justify-center">
+                <span className="material-symbols-outlined text-black font-black text-xl md:text-2xl">visibility</span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-headline font-black text-black mb-4 md:mb-5 tracking-tight uppercase">{item.heading}</h2>
+              <div className="w-12 md:w-16 h-2 bg-black mb-6"></div>
+              <p className="text-sm md:text-base text-black font-bold leading-relaxed">{item.body}</p>
+            </motion.div>
+          ))}
         </div>
       </section>
 
@@ -104,12 +80,15 @@ const Home = () => {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6 mt-16">
-          {domains.map((item, idx) => (
-            <div key={idx} className="brutal-card bg-white p-4 md:p-6 rounded flex flex-col justify-between h-32 md:h-40 group">
-              <span className={`${item.isEmoji ? '' : 'material-symbols-outlined'} ${item.classColor} text-3xl md:text-4xl group-hover:scale-110 transition-transform`}>{item.icon}</span>
-              <h3 className="font-headline font-black text-xs md:text-sm text-black uppercase mt-3 md:mt-4">{item.title}</h3>
-            </div>
-          ))}
+          {domains.map((item, idx) => {
+            const isEmoji = /[\u{1F300}-\u{1F9FF}]/u.test(item.icon)
+            return (
+              <div key={item.id} className="brutal-card bg-white p-4 md:p-6 rounded flex flex-col justify-between h-32 md:h-40 group">
+                <span className={`${isEmoji ? '' : 'material-symbols-outlined'} ${getColorMap(item.icon)} text-3xl md:text-4xl group-hover:scale-110 transition-transform`}>{item.icon}</span>
+                <h3 className="font-headline font-black text-xs md:text-sm text-black uppercase mt-3 md:mt-4">{item.name}</h3>
+              </div>
+            )
+          })}
         </div>
       </section>
 
@@ -122,12 +101,12 @@ const Home = () => {
         </div>
         <div className="w-full py-3">
           <div className="flex animate-marquee items-center" style={{ width: 'max-content' }}>
-            {[...partners, ...partners].map((src, idx) => (
+            {[...sponsors, ...sponsors].map((sponsor, idx) => (
               <div key={idx} className="brutal-card bg-white p-2 w-32 h-32 md:w-40 md:h-40 flex items-center justify-center shrink-0 mx-4 md:mx-6">
                 <img
                   className="w-full h-full object-contain filter grayscale contrast-200 hover:grayscale-0 transition-all duration-300 hover:scale-[1.04] cursor-pointer"
-                  alt={`Partner ${idx + 1}`}
-                  src={src}
+                  alt={sponsor.name || `Partner ${idx + 1}`}
+                  src={sponsor.logo_url}
                 />
               </div>
             ))}
@@ -148,19 +127,19 @@ const Home = () => {
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-black text-white flex items-center justify-center border-2 border-black shrink-0">
                   <span className="material-symbols-outlined text-xl md:text-2xl">location_on</span>
                 </div>
-                <span className="text-sm md:text-base font-black uppercase tracking-tight">SKNCOE Campus, Block A, 402</span>
+                <span className="text-sm md:text-base font-black uppercase tracking-tight">{contact?.address || 'SKNCOE Campus, Block A, 402'}</span>
               </div>
               <div className="flex gap-4 items-center">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-black text-white flex items-center justify-center border-2 border-black shrink-0">
                   <span className="material-symbols-outlined text-xl md:text-2xl">mail</span>
                 </div>
-                <span className="text-sm md:text-base font-black uppercase tracking-tight overflow-hidden text-ellipsis">gdg.skncoe@gmail.com</span>
+                <span className="text-sm md:text-base font-black uppercase tracking-tight overflow-hidden text-ellipsis">{contact?.email || 'gdg.skncoe@gmail.com'}</span>
               </div>
             </div>
           </div>
           <div className="lg:w-2/3 h-[300px] md:h-[500px] relative">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3784.092770281643!2d73.8122393750005!3d18.472719271959724!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc29532822a758d%3A0x679412117565362e!2sSmt.%20Kashibai%20Navale%20College%20of%20Engineering!5e0!3m2!1sen!2sin!4v1714400000000!5m2!1sen!2sin"
+              src={contact?.map_embed_url || "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3784.092770281643!2d73.8122393750005!3d18.472719271959724!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc29532822a758d%3A0x679412117565362e!2sSmt.%20Kashibai%20Navale%20College%20of%20Engineering!5e0!3m2!1sen!2sin!4v1714400000000!5m2!1sen!2sin"}
               width="100%"
               height="100%"
               style={{ border: 0 }}
@@ -170,7 +149,7 @@ const Home = () => {
               className="grayscale contrast-125"
             ></iframe>
             <div className="absolute top-4 md:top-8 right-4 md:right-8 bg-warning border-2 md:border-4 border-black p-2 md:p-4 font-black uppercase shadow-brutal text-xs md:text-sm rotate-3">
-              SKNCOE Pune
+              {contact?.location_badge || 'SKNCOE Pune'}
             </div>
           </div>
         </div>
@@ -182,33 +161,17 @@ const Home = () => {
           <h2 className="text-3xl md:text-4xl font-headline font-black tracking-tight uppercase m-0">Questions?</h2>
         </div>
         <div className="space-y-4 md:space-y-6">
-          <details className="group bg-white rounded-none border-4 border-black brutal-card" open>
-            <summary className="list-none px-6 md:px-8 py-4 md:py-6 cursor-pointer flex justify-between items-center bg-surface-dark border-b-4 border-black font-headline font-black text-black text-base md:text-lg uppercase transition-colors group-hover:bg-warning">
-              Who can join GDG On-Campus SKNCOE?
-              <span className="material-symbols-outlined text-black group-open:-rotate-180 transition-transform">expand_more</span>
-            </summary>
-            <div className="px-6 md:px-8 py-4 md:py-6 text-black text-sm md:text-base font-bold leading-relaxed bg-white">
-              Open to all students across all branches and years. Whether you're a designer, coder, or community builder, there's a place for you.
-            </div>
-          </details>
-          <details className="group bg-white rounded-none border-4 border-black brutal-card">
-            <summary className="list-none px-6 md:px-8 py-4 md:py-6 cursor-pointer flex justify-between items-center bg-surface-dark border-b-4 border-transparent group-open:border-black font-headline font-black text-black text-base md:text-lg uppercase transition-colors group-hover:bg-warning">
-              How can I become a core team member?
-              <span className="material-symbols-outlined text-black group-open:-rotate-180 transition-transform">expand_more</span>
-            </summary>
-            <div className="px-6 md:px-8 py-4 md:py-6 text-black text-sm md:text-base font-bold leading-relaxed bg-white border-t-0 hidden group-open:block">
-              Applications for the core team open once per academic year. Stay tuned to our social channels for recruitment updates.
-            </div>
-          </details>
-          <details className="group bg-white rounded-none border-4 border-black brutal-card">
-            <summary className="list-none px-6 md:px-8 py-4 md:py-6 cursor-pointer flex justify-between items-center bg-surface-dark border-b-4 border-transparent group-open:border-black font-headline font-black text-black text-base md:text-lg uppercase transition-colors group-hover:bg-warning">
-              What technologies do you cover?
-              <span className="material-symbols-outlined text-black group-open:-rotate-180 transition-transform">expand_more</span>
-            </summary>
-            <div className="px-6 md:px-8 py-4 md:py-6 text-black text-sm md:text-base font-bold leading-relaxed bg-white hidden group-open:block">
-              We focus primarily on Google ecosystems like Firebase, Flutter, GCP, and Android, but also explore modern stacks like React, Next.js, and PyTorch.
-            </div>
-          </details>
+          {faqs.map((faq, idx) => (
+            <details key={faq.id} className="group bg-white rounded-none border-4 border-black brutal-card" open={idx === 0}>
+              <summary className="list-none px-6 md:px-8 py-4 md:py-6 cursor-pointer flex justify-between items-center bg-surface-dark border-b-4 border-black font-headline font-black text-black text-base md:text-lg uppercase transition-colors group-hover:bg-warning">
+                {faq.question}
+                <span className="material-symbols-outlined text-black group-open:-rotate-180 transition-transform">expand_more</span>
+              </summary>
+              <div className="px-6 md:px-8 py-4 md:py-6 text-black text-sm md:text-base font-bold leading-relaxed bg-white">
+                {faq.answer}
+              </div>
+            </details>
+          ))}
         </div>
       </section>
 

@@ -1,130 +1,149 @@
 import { motion } from 'framer-motion'
-
-const PLACEHOLDER_M = "https://lh3.googleusercontent.com/aida-public/AB6AXuArJRxx1BwVSe5lNLTbBcahpFOUR7KwUsl9Ily6-Bse5yxINHIpAKFZVQ5yQBElB9GbOaPreCyG4a8jB7p6eoC_QdkK3PxHQS9BzcAR1ZWqM4qshcJvNGdcZlisr53Up3j9erx1SvpLTSPwkrUSFmBUIgWuSLJMIwmP2bug8t8ZYQAJ9g-pJRNjacGn1-bYzO4RjPWt-idgHTxncCLnig_JzZubtr5w_3I5DKbVZSlgTzAfDPwaYj765R69n5PSdPGx4-QG2lGYeA"
-
-const leaders = [
-  { name: 'Swarnim Shamgaonkar', roleTag: 'Organizer', roleColor: 'bg-primary', image: '/core-images/organizer.jpeg', linkedin: 'https://www.linkedin.com/in/swarnim-shamgaonkar-b725472b1/' },
-  { name: 'Pratham Jadhav', roleTag: 'Co-Organizer', roleColor: 'bg-success', image: '/core-images/co-organizer.jpg', linkedin: 'https://www.linkedin.com/in/jadhavprathammm/' },
-]
-
-const domains = [
-  {
-    lead: { name: 'Sudeep Sakpal', roleTag: 'Web Development Lead', roleColor: 'bg-primary', image: '/core-images/leads/Web Dev Lead.jpg', linkedin: 'https://www.linkedin.com/in/sudeep-sakpal/' },
-    coLead: { name: 'Hritika Gupta', roleTag: 'Web Development Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Web dev Colead.jpg', linkedin: 'https://www.linkedin.com/in/hritika3/' },
-  },
-  {
-    lead: { name: 'Niranjan Sonawane', roleTag: 'AI/ML Lead', roleColor: 'bg-primary', image: '/core-images/leads/AIML Lead.jpg', linkedin: 'https://www.linkedin.com/in/niranjan-sonawane-59079728a/' },
-    coLead: { name: 'Manasvi Bhandarkar', roleTag: 'AI/ML Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Aiml Co-lead.jpg', linkedin: 'https://www.linkedin.com/in/manasvi-bhandarkar-3a32282a7/' },
-  },
-  {
-    lead: { name: 'Srushti Dawkhar', roleTag: 'Android Development Lead', roleColor: 'bg-primary', image: '/core-images/leads/Android Lead.jpg', linkedin: 'https://www.linkedin.com/in/srushti-d-179146220/' },
-    coLead: { name: 'Aditya Khawale', roleTag: 'Android Development Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Android Co lead.jpg', linkedin: 'https://www.linkedin.com/in/aditya-khawale/' },
-  },
-  {
-    lead: { name: 'Tvisha Ghiya', roleTag: 'Competitive Programming Lead', roleColor: 'bg-primary', image: '/core-images/leads/Competitive Lead.jpg', linkedin: 'https://www.linkedin.com/in/tvisha-ghiya-387062314/' },
-    coLead: { name: 'Kaiwalya Gunjal', roleTag: 'Competitive Programming Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Competitive Co-lead.jpg', linkedin: 'https://www.linkedin.com/in/kaiwlya-gunjal-561aa828a/' },
-  },
-  {
-    lead: { name: 'Elton Fernandes', roleTag: 'Cyber Security Lead', roleColor: 'bg-primary', image: '/core-images/leads/Cyber Security Lead.jpg', linkedin: 'https://www.linkedin.com/in/elton-fernandes18/' },
-    coLead: { name: 'Priyal Sathe', roleTag: 'Cyber Security Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Cyber Security Co lead.jpg', linkedin: 'https://www.linkedin.com/in/priyal-sathe/' },
-  },
-  {
-    lead: { name: 'Vinayak Kapkar', roleTag: 'Event Management Lead', roleColor: 'bg-primary', image: '/core-images/leads/Event Management Lead.jpeg', linkedin: 'https://www.linkedin.com/in/vinayak-kapkar-109b16230/' },
-    coLead: { name: 'Shreya Kadam', roleTag: 'Event Management Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Event Management Co-lead.jpg', linkedin: 'https://www.linkedin.com/in/shreya-kadam-b30881355/' },
-  },
-  {
-    lead: { name: 'Aditi Deshpande', roleTag: 'Social Media Lead', roleColor: 'bg-primary', image: '/core-images/leads/Social Media Lead.jpg', linkedin: 'https://www.linkedin.com/in/aditi-deshpande-9aba32274/' },
-    coLead: { name: 'Parth Karpe', roleTag: 'Social Media Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Social Media Colead.jpeg', linkedin: null },
-  },
-  {
-    lead: { name: 'Avishkar Choundkar', roleTag: 'Sponsorship Lead', roleColor: 'bg-primary', image: '/core-images/leads/Sponsorship lead.jpg', linkedin: 'https://www.linkedin.com/in/avishkarchoundkar/' },
-    coLead: { name: 'Alphiya Kazi', roleTag: 'Sponsorship Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Sponsorship Colead.jpg', linkedin: 'https://www.linkedin.com/in/alphiya-kazi-1609b12a1/' },
-  },
-  {
-    lead: { name: 'Aarya Anekar', roleTag: 'Cloud Computing Lead', roleColor: 'bg-primary', image: '/core-images/leads/Cloud Lead.jpg', linkedin: 'https://www.linkedin.com/in/aaryaa2005/' },
-    coLead: { name: 'Harsh Dharmawat', roleTag: 'Cloud Computing Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Cloud Computing Co lead.jpg', linkedin: 'https://www.linkedin.com/in/harsh-dharmawat/' },
-  },
-  {
-    lead: { name: 'Dhanashree Labhe', roleTag: 'Women Tech Lead', roleColor: 'bg-primary', image: '/core-images/leads/Women Tech Lead.jpg', linkedin: 'https://www.linkedin.com/in/dhanashree-labhe-232344281/' },
-    coLead: { name: 'Dynanada Thuse', roleTag: 'Women Tech Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/Women Tech Colead.jpg', linkedin: 'https://www.linkedin.com/in/dnyanada-thuse-992654317/' },
-  },
-  {
-    lead: { name: 'Madhura Gore', roleTag: 'UI/UX Lead', roleColor: 'bg-primary', image: '/core-images/leads/UIUX Lead.jpg', linkedin: 'https://www.linkedin.com/in/madhuragore/' },
-    coLead: { name: 'Divya Bhandari', roleTag: 'UI/UX Co-Lead', roleColor: 'bg-success', image: '/core-images/coleads/UIUX Colead.jpg', linkedin: 'https://www.linkedin.com/in/divya-bhandari-14b4a1308/' },
-  },
-]
-
-const LeaderCard = ({ person, index }) => (
-  <motion.div
-    initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
-    whileInView={{ opacity: 1, x: 0 }}
-    viewport={{ once: true }}
-    transition={{ duration: 0.5, delay: (index % 2) * 0.1 }}
-    className="group relative bg-white p-8 border-4 border-black brutal-card shadow-brutal flex flex-col items-center md:items-start text-center md:text-left transition-all hover:bg-surface-dark"
-  >
-    <div className="flex flex-col md:flex-row gap-8 items-center w-full">
-      <div className="relative shrink-0">
-        <div className="w-48 h-48 rounded overflow-hidden border-4 border-black bg-white shadow-brutal">
-          <img alt={person.name} className="w-full h-full object-cover filter grayscale contrast-125 group-hover:grayscale-0 transition-all duration-300" src={person.image} />
-        </div>
-      </div>
-      <div className="flex-1">
-        <span className={`inline-block px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] border-2 border-black text-white ${person.roleColor} mb-4 shadow-brutal-sm`}>
-          {person.roleTag}
-        </span>
-        <h3 className="font-headline text-3xl font-black mb-6 text-black uppercase">{person.name}</h3>
-        {person.linkedin && (
-          <a href={person.linkedin} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-2 font-black uppercase text-black bg-white border-2 border-black brutal-btn">
-            <span className="material-symbols-outlined !text-base">link</span>
-            LinkedIn
-          </a>
-        )}
-      </div>
-    </div>
-  </motion.div>
-)
+import { useContent } from '../context/ContentContext'
 
 const Core = () => {
+  const { content } = useContent()
+  const { team } = content
+
+  const leaders = team.filter(m => m.category === 'lead')
+  const domainLeads = team.filter(m => m.category === 'domain_lead')
+  const coLeads = team.filter(m => m.category === 'co_lead')
+
+  const getPhotoUrl = (member) => {
+    if (member.photo_url) return member.photo_url
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=000&color=fff&size=200&font-size=0.33`
+  }
+
+  const getDomainKey = (role) => {
+    return role.replace(' Lead', '').replace(' Co-Lead', '').replace(' Development', '').trim().toLowerCase()
+  }
+
+  const coLeadsByDomain = coLeads.reduce((acc, cl) => {
+    const key = getDomainKey(cl.role)
+    if (!acc[key]) acc[key] = []
+    acc[key].push(cl)
+    return acc
+  }, {})
+
   return (
-    <div className="grid-bg min-h-screen border-x-0 md:border-x-4 border-black max-w-screen-2xl mx-auto overflow-hidden">
-      <main className="max-w-6xl mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-24 md:pb-40">
+    <div className="grid-paper min-h-screen pt-24 md:pt-28 pb-24 md:pb-32 border-x-0 md:border-x-4 border-black max-w-screen-2xl mx-auto overflow-hidden">
+      <main className="max-w-7xl mx-auto px-4 md:px-6">
 
-        {/* Hero Section */}
-        <section className="mb-16 md:mb-32 text-center bg-white border-4 border-black p-6 md:p-12 brutal-card shadow-brutal-lg rotate-1">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-success text-white border-2 border-black text-[10px] md:text-[12px] font-black uppercase tracking-widest mb-6 md:mb-8 shadow-brutal-sm">
-            Meet the Team
-          </div>
-          <h1 className="font-headline text-4xl sm:text-6xl md:text-8xl font-black tracking-tighter mb-6 md:mb-8 text-black leading-tight md:leading-none uppercase break-words">
-            Building the future, <br className="hidden sm:block" />
-            <span className="text-white bg-danger px-3 md:px-4 border-2 md:border-4 border-black inline-block mt-2 md:mt-4 shadow-brutal -rotate-2">Together.</span>
-          </h1>
-          <p className="text-base md:text-xl text-black font-bold max-w-2xl mx-auto leading-relaxed bg-surface-dark p-4 border-2 border-black">
-            The GDG SKNCOE core team is a collective of visionary developers and designers committed to fostering a thriving tech ecosystem.
-          </p>
-        </section>
+        <header className="mb-12 md:mb-20 text-center bg-white border-4 border-black p-6 md:p-10 shadow-brutal-lg relative overflow-hidden">
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="relative z-10"
+          >
+            <span className="inline-block bg-primary text-white px-4 py-1 border-2 border-black font-black uppercase text-xs md:text-sm tracking-widest mb-4 md:mb-6 shadow-brutal-sm">
+              Meet the Team
+            </span>
+            <h1 className="font-headline text-4xl md:text-6xl lg:text-7xl font-black tracking-tighter text-black mb-4 md:mb-6 uppercase">
+              Building the future, <span className="bg-success px-3 md:px-4 py-1 border-2 md:border-4 border-black inline-block mt-2 -rotate-1 shadow-brutal">Together.</span>
+            </h1>
+            <p className="text-base md:text-lg text-black font-bold leading-relaxed max-w-2xl mx-auto bg-surface-dark p-4 border-2 border-black">
+              The GDG SKNCOE core team is a collective of visionary developers and designers committed to fostering a thriving tech ecosystem.
+            </p>
+          </motion.div>
+        </header>
 
-        {/* Leadership Section */}
-        <section className="mb-10">
-          <div className="flex items-center gap-4 md:gap-6 mb-12 md:mb-16">
-            <h2 className="font-headline text-3xl md:text-5xl font-black text-black uppercase tracking-tighter bg-warning border-4 border-black px-4 md:px-6 py-2 shadow-brutal">Leadership</h2>
-            <div className="h-2 flex-1 bg-black hidden sm:block"></div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-            {leaders.map((leader, idx) => (
-              <LeaderCard key={leader.name} person={leader} index={idx} />
-            ))}
-          </div>
-        </section>
-
-        {/* Domain Sections */}
-        <div className="space-y-8 md:space-y-10">
-          {domains.map((domain, i) => (
-            <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-              <LeaderCard person={domain.lead} index={0} />
-              <LeaderCard person={domain.coLead} index={1} />
+        {leaders.length > 0 && (
+          <section className="mb-12 md:mb-20">
+            <div className="flex items-center gap-4 mb-8 md:mb-12">
+              <h2 className="text-2xl md:text-3xl font-headline font-black text-black uppercase tracking-tight">Leadership</h2>
+              <div className="flex-1 h-1 bg-black"></div>
             </div>
-          ))}
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+              {leaders.map((leader, idx) => (
+                <motion.div
+                  key={leader.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.1 }}
+                  className="bg-white border-4 border-black p-6 md:p-8 shadow-brutal hover:shadow-brutal-lg transition-all hover:-translate-y-1 flex flex-col items-center text-center"
+                >
+                  <div className="w-32 h-32 md:w-40 md:h-40 border-4 border-black overflow-hidden mb-4 md:mb-6 shadow-brutal-sm bg-gray-100">
+                    <img src={getPhotoUrl(leader)} alt={leader.name} className="w-full h-full object-cover" loading="lazy" />
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-headline font-black text-black uppercase tracking-tight mb-1">{leader.name}</h3>
+                  <p className="text-sm md:text-base font-bold text-gray-600 uppercase tracking-wide">{leader.role}</p>
+                  {leader.linkedin_url && (
+                    <a href={leader.linkedin_url} target="_blank" rel="noopener noreferrer" className="mt-3 text-primary hover:underline text-sm flex items-center gap-1 font-bold">
+                      <span className="material-symbols-outlined text-sm">link</span> LinkedIn
+                    </a>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section className="mb-12 md:mb-20">
+          <div className="flex items-center gap-4 mb-8 md:mb-12">
+            <h2 className="text-2xl md:text-3xl font-headline font-black text-black uppercase tracking-tight">Domain Teams</h2>
+            <div className="flex-1 h-1 bg-black"></div>
+          </div>
+
+          {domainLeads.map((lead) => {
+            const domainKey = getDomainKey(lead.role)
+            const domainCoLeads = coLeadsByDomain[domainKey] || []
+            const domainName = lead.role.replace(' Lead', '').replace(' Development', '')
+
+            return (
+              <div key={lead.id} className="mb-8 md:mb-12">
+                <div className="bg-primary text-white border-4 border-black p-3 md:p-4 inline-block mb-4 md:mb-6 shadow-brutal-sm -rotate-1">
+                  <h3 className="text-lg md:text-xl font-headline font-black uppercase tracking-tight">{domainName}</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                  <motion.div
+                    initial={{ opacity: 0, x: -30 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5 }}
+                    className="bg-white border-4 border-black p-4 md:p-6 shadow-brutal hover:shadow-brutal-lg transition-all hover:-translate-y-1 flex items-center gap-4"
+                  >
+                    <div className="w-16 h-16 md:w-20 md:h-20 border-2 border-black overflow-hidden shrink-0 shadow-brutal-sm bg-gray-100">
+                      <img src={getPhotoUrl(lead)} alt={lead.name} className="w-full h-full object-cover" loading="lazy" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-base md:text-lg font-headline font-black text-black uppercase tracking-tight truncate">{lead.name}</h4>
+                      <p className="text-xs md:text-sm font-bold text-gray-600 uppercase tracking-wide">{lead.role}</p>
+                      {lead.linkedin_url && (
+                        <a href={lead.linkedin_url} target="_blank" rel="noopener noreferrer" className="mt-1 text-primary hover:underline text-xs flex items-center gap-1 font-bold">
+                          <span className="material-symbols-outlined text-xs">link</span> LinkedIn
+                        </a>
+                      )}
+                    </div>
+                  </motion.div>
+                  {domainCoLeads.map((coLead) => (
+                    <motion.div
+                      key={coLead.id}
+                      initial={{ opacity: 0, x: 30 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5 }}
+                      className="bg-white border-4 border-black p-4 md:p-6 shadow-brutal hover:shadow-brutal-lg transition-all hover:-translate-y-1 flex items-center gap-4"
+                    >
+                      <div className="w-16 h-16 md:w-20 md:h-20 border-2 border-black overflow-hidden shrink-0 shadow-brutal-sm bg-gray-100">
+                        <img src={getPhotoUrl(coLead)} alt={coLead.name} className="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-base md:text-lg font-headline font-black text-black uppercase tracking-tight truncate">{coLead.name}</h4>
+                        <p className="text-xs md:text-sm font-bold text-gray-600 uppercase tracking-wide">{coLead.role}</p>
+                        {coLead.linkedin_url && (
+                          <a href={coLead.linkedin_url} target="_blank" rel="noopener noreferrer" className="mt-1 text-primary hover:underline text-xs flex items-center gap-1 font-bold">
+                            <span className="material-symbols-outlined text-xs">link</span> LinkedIn
+                          </a>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </section>
 
       </main>
     </div>

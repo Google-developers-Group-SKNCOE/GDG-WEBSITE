@@ -42,7 +42,7 @@ const EventCard = ({ event, index }) => {
           
           <div className="flex items-center justify-between mb-4 border-b-2 border-black pb-4">
             <time className="text-sm font-black text-black uppercase tracking-widest flex items-center gap-2">
-              <span className={`w-3 h-3 border-2 border-black ${tw.bgSolid}`}></span> {event.date}
+              <span className={`w-3 h-3 border-2 border-black ${tw.bgSolid}`}></span> {formatDate(event.date)}
             </time>
             <span className={`px-4 py-1 bg-white border-2 border-black text-black text-[10px] font-black uppercase shadow-brutal-sm`}>{event.type}</span>
           </div>
