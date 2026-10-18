@@ -57,10 +57,13 @@ create table if not exists public.comments (
   name text not null,
   event_ref text default 'General',
   message text not null,
+  parent_comment_id text,
   likes integer default 0,
   is_deleted boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
+
+alter table public.comments add column if not exists parent_comment_id text;
 
 -- ==============================================================================
 -- 6. Row Level Security (RLS) Policies

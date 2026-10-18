@@ -790,6 +790,30 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
                       {/* Actions Bar: Like + Direct Reply Toggle */}
                       <div className="flex items-center justify-between pt-2 border-t-2 border-black/10">
                         <div className="flex items-center gap-2">
+                          {/* Upvote / Like Button (1 like limit with toggle) */}
+                          <button
+                            onClick={() => handleLike(post)}
+                            title={isPostLiked ? 'Unlike note' : 'Upvote note (1 per person)'}
+                            className={`flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase border-2 border-black transition-all cursor-pointer ${
+                              isPostLiked
+                                ? 'bg-[#4285F4] text-white shadow-none translate-x-0.5 translate-y-0.5'
+                                : 'bg-white text-black shadow-brutal-sm hover:bg-[#FBBC04] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none'
+                            }`}
+                          >
+                            <span
+                              className={`material-symbols-outlined text-sm ${
+                                isPostLiked ? 'text-white' : 'text-[#4285F4]'
+                              }`}
+                              style={{ fontVariationSettings: isPostLiked ? "'FILL' 1" : "'FILL' 0" }}
+                            >
+                              thumb_up
+                            </span>
+                            <span>{post.likes || 0}</span>
+                            {isPostLiked && (
+                              <span className="text-[10px] font-bold uppercase ml-0.5 opacity-90">• Liked</span>
+                            )}
+                          </button>
+
                           {/* Reply Button */}
                           <button
                             onClick={() => {
@@ -920,6 +944,23 @@ const CommunityFeed = ({ eventFilterList = [], activeEvent = null }) => {
                                     </span>
                                   </div>
 
+                                  {/* Like Reply Button */}
+                                  <button
+                                    onClick={() => handleLike(reply)}
+                                    className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase border border-black cursor-pointer ${
+                                      isReplyLiked
+                                        ? 'bg-[#4285F4] text-white'
+                                        : 'bg-white text-black hover:bg-[#FBBC04]'
+                                    }`}
+                                  >
+                                    <span
+                                      className="material-symbols-outlined text-xs"
+                                      style={{ fontVariationSettings: isReplyLiked ? "'FILL' 1" : "'FILL' 0" }}
+                                    >
+                                      thumb_up
+                                    </span>
+                                    <span>{reply.likes || 0}</span>
+                                  </button>
                                 </div>
 
                                 <p className="text-black text-xs font-bold leading-relaxed whitespace-pre-wrap pl-2 border-l-2 border-[#4285F4]/40">
